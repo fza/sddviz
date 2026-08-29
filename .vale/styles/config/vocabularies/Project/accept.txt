@@ -44,6 +44,7 @@ repoints
 sdd('s)?
 sddviz('s)?
 semver
+severities
 snake_case
 subagent('s)?
 subprocess('s)?
@@ -57,5 +58,7 @@ unbuilt
 undecodable
 unexported
 untracked
+validator
+validators
 vendored
 vite('s)?
