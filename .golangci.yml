@@ -1,0 +1,189 @@
+version: "2"
+
+run:
+  concurrency: 4
+  tests: true
+
+output:
+  formats:
+    text:
+      path: stdout
+      colors: false
+
+linters:
+  default: none
+
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - depguard
+    - durationcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - forbidigo
+    - forcetypeassert
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - goheader
+    - goprintffuncname
+    - gosec
+    - govet
+    - grouper
+    - importas
+    - ineffassign
+    - interfacebloat
+    - makezero
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - nolintlint
+    - nosprintfhostport
+    - prealloc
+    - predeclared
+    - reassign
+    - revive
+    - staticcheck
+    - testpackage
+    - thelper
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - varnamelen
+    - whitespace
+
+  settings:
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - []
+            - []
+            - - skip-package-name-checks: true
+
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: log$
+              desc: use log/slog instead
+
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    exhaustive:
+      default-signifies-exhaustive: true
+
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+        - singleCaseSwitch
+
+    staticcheck:
+      checks:
+        - ST1003
+      initialisms:
+        - API
+        - ASCII
+        - CLI
+        - CPU
+        - DAG
+        - DNS
+        - GUID
+        - HTML
+        - HTTP
+        - HTTPS
+        - ID
+        - IP
+        - JSON
+        - RPC
+        - SSH
+        - TCP
+        - TLS
+        - TTL
+        - UDP
+        - UI
+        - UID
+        - UUID
+        - URI
+        - URL
+        - XML
+
+    varnamelen:
+      max-distance: 6
+      check-return: true
+      ignore-names:
+        - err
+        - id
+        - tc # For table driven tests
+      ignore-decls:
+        - i int
+        - r io.Reader
+        - w io.Writer
+        - f *os.File
+        - fs afero.Fs
+        - ctx context.Context
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - bodyclose
+          - contextcheck
+          - err113
+          - errcheck
+          - forcetypeassert
+          - goconst
+          - gocritic
+          - gosec
+          - prealloc
+          - revive
+          - staticcheck
+          - thelper
+          - varnamelen
+        path: _test\.go
+      - linters:
+          - gochecknoglobals
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+severity:
+  default: blocker
+  case-sensitive: false
+  rules:
+    - linters:
+        - nolintlint
+        - varnamelen
+      severity: minor
+
+formatters:
+  enable:
+    - gofmt
+
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -7,8 +7,17 @@ charset = utf-8
 indent_style = space
 indent_size = 2
 
-[*.rs]
-indent_size = 4
+[{*.go,*.go2}]
+indent_style = tab
+ij_go_group_current_project_imports = true
+ij_go_group_stdlib_imports = true
+ij_go_import_sorting = gofmt
+ij_go_local_group_mode = project
+ij_go_move_all_imports_in_one_declaration = true
+ij_go_move_all_stdlib_imports_in_one_group = true
+
+[*.{ts,tsx,js,jsx,css,html,json,yml,yaml}]
+indent_style = tab
 
 [*.md]
 trim_trailing_whitespace = false

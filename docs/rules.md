@@ -36,10 +36,10 @@ in anticipation.
 |---|---|
 | **Prose** - documents, commit messages, code and doc comments, anything a reader sees | **yes, always** |
 | **Developer-facing values** - Tauri command names, configuration keys, error text | **yes**, through the breaking-change gate |
-| **Internal identifiers** - Rust and TypeScript names, JSON keys, file paths | **no** |
+| **Internal identifiers** - Go and TypeScript names, JSON keys, file paths | **no** |
 
 So a sentence naming an entry by a retired synonym violates the first row, while
-"the entry is superseded" does not, and a three.js `node` variable in the back end stands under the
+"the entry is superseded" does not, and a three.js `node` variable in the front end stands under the
 third:
 
 <vale Taxonomy.Entry = NO>
@@ -145,8 +145,15 @@ SDD's words for an entry's other fixed fields, spelled as the tool spells them. 
 
 ### the front end, the back end
 
-`source/ui` is **the front end** and `source/backend` is **the back end**. Both are written as two
-words in prose, and the directory names are identifiers rather than prose.
+**The front end** is the web application under `source/frontend`. **The back end** is the Go code
+around it. Both are written as two words in prose, and the directory names are identifiers rather
+than prose.
+
+### service
+
+A **service** is a Go struct whose exported methods the front end calls through generated bindings.
+The word for that surface is `service`, never "command", which belongs to a different framework, and
+never "endpoint", which belongs to the server build alone.
 
 ### repository
 

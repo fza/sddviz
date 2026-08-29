@@ -16,7 +16,7 @@ CLAUDE.local.md
 # Build output
 dist/
 node_modules/
-target/
+source/frontend/dist/
 
 # Coverage and test reports, produced locally as well as in CI
 coverage/

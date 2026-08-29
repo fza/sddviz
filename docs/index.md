@@ -7,50 +7,43 @@ under `.sdd/`, never here.
 
 | Path | Holds |
 |---|---|
-| `source/ui` | The front end: React 19 and TypeScript, built by Vite. Everything the user sees. |
-| `source/backend` | The back end: a Rust crate carrying `tauri.conf.json`. Every read, from the graph files and from `sdd`. |
+| `source` | The Go module: the Wails application and every read of a graph. |
+| `source/frontend` | The web application: React 19 and TypeScript, built by Vite, embedded by the module. |
 | `docs` | This set. |
 | `.sdd` | The decision graph. |
 
-The two modules under `source/` are peers rather than a package and its subdirectory, because the
-back end owns every read and the records it answers with in its own right.
-
-Tauri resolves the front end directory to the first `package.json` at or above the working
-directory. No such file sits at or above `source/backend`, so `TAURI_FRONTEND_PATH` and
-`TAURI_APP_PATH` are set by the `tauri` script in `source/ui/package.json` rather than left to the
-operator.
+The web application sits inside the Go module because `go:embed` cannot reach outside its own package
+directory. Its build output lands in `source/frontend/dist`, which the module embeds.
 
 ## Module boundaries
 
-- The front end reaches the back end only through Tauri commands, and reaches no filesystem path and
-  no subprocess directly.
-- Commands carry data. Rendering happens in the front end.
-- `source/backend/capabilities/default.json` grants `core:default` and nothing further. The viewer
-  needs no filesystem or shell permission of its own.
+- The front end reaches the back end only through generated bindings over Wails services, and reaches
+  no filesystem path and no subprocess directly.
+- Services carry data. Rendering happens in the front end.
+- CGO is allowed. A desktop build needs it for the WebView binding; a server build does not.
 
 ## Reading a graph
 
-Entry data is read from `.sdd/graph/**/*.md`, where an entry is YAML frontmatter above a markdown
-body. An entry's derived status, along with search and linting, comes from the `sdd` binary on
-`PATH`, addressed at a repository with the global `--graph-dir` flag. Browsing works without the
-binary, with those features absent.
+sdd is embedded as a library. The module implements sdd's `GraphStore` port, which package
+`application` documents as an infrastructure port for an embedding host: one walk of
+`.sdd/graph/**/*.md` builds an `application.SnapshotData`, whose `EntryDocument` values carry the
+frontmatter as structured data, and the same snapshot is handed to `application.Application` for
+search and views.
 
-Status arrives through one call, `sdd view --layout "source(graph):as-list"`, which renders every
-entry on a line carrying its status and, where the entry is closed or superseded, the live entry
-that replaced it. sdd computes status from the whole graph and stores it nowhere, so no file holds
-the answer.
+Read-only is enforced there. The store's write methods, `Apply` and `Reconcile` in sdd's port,
+refuse, so no call path exists that could write to a reader's repository.
 
-Two properties of the tool's read surface bound what the viewer offers:
+Two properties of sdd's read surface bound what the viewer offers:
 
-- **Answers are rendered for a reader.** No graph read carries a machine-readable format;
-  `--format json` exists on `config` and `stats` alone. What is consumed from that output is the
-  entry line, whose shape sdd's own unit tests hold.
+- **Derived status is not reachable structurally.** sdd's `Snapshot` exposes `Project()`,
+  `Revision()` and `Health()` and nothing further, so status is read from the line its view renders,
+  whose shape sdd's own unit tests hold.
 - **Reads follow the working tree.** The read surface takes no branch or revision argument. A branch
   is a session binding validated against a live registered checkout, and sddviz checks nothing out,
   so browsing an arbitrary ref is not offered.
 
 ## Documentation sets
 
-No implementation set exists yet. The application is a shell: `source/backend/src/lib.rs` registers
-one command, `backend_version`, which returns the crate version, and `source/ui/src/App.tsx` calls it
-to show that the seam between the modules works.
+No implementation set exists yet. The application is a shell: `source/internal/graph` registers one
+service method, `BackendVersion`, and `source/frontend/src/App.tsx` calls it through its generated
+binding to show that the seam between the two halves works.

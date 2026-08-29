@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { Service } from './bindings/github.com/fza/sddviz/internal/graph';
 
 export function App() {
 	const [backendVersion, setBackendVersion] = useState<string | null>(null);
 	const [backendError, setBackendError] = useState<string | null>(null);
 
 	useEffect(() => {
-		invoke<string>('backend_version')
+		Service.BackendVersion()
 			.then(setBackendVersion)
 			.catch((cause: unknown) => setBackendError(`${cause}`));
 	}, []);

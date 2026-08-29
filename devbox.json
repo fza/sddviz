@@ -2,35 +2,44 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.18.0/.schema/devbox.schema.json",
   "packages": {
     "nodejs": "24",
-    "rustup": "1.29.0"
+    "go": "1.26",
+    "go-task": "latest",
+    "golangci-lint": "latest"
   },
   "shell": {
     "init_hook": [
-      "rustup default stable >/dev/null",
-      "[ -n \"$(git rev-parse --git-dir 2>/dev/null)\" ] && [ -z \"$(git config --get core.hooksPath)\" ] && git config core.hooksPath scripts/git-hooks || true"
+      "[ -n \"$(git rev-parse --git-dir 2>/dev/null)\" ] && [ -z \"$(git config --get core.hooksPath)\" ] && git config core.hooksPath scripts/git-hooks || true",
+      "export PATH=\"$(go env GOPATH)/bin:$PATH\"",
+      "./scripts/dev-setup.sh --check"
     ],
     "scripts": {
-      "dev": "cd source/ui && npm run tauri dev",
-      "build": "cd source/ui && npm run tauri build",
-      "ui:install": "cd source/ui && npm install",
-      "ui:lint": "cd source/ui && npm run lint",
-      "ui:test": "cd source/ui && npm test",
-      "backend:lint": "cd source/backend && cargo clippy --all-targets -- -D warnings",
-      "backend:test": "cd source/backend && cargo test",
+      "dev": "cd source && wails3 dev",
+      "build": "cd source && wails3 build",
+      "build:server": "cd source && go build -tags server -o ../dist/sddviz-server .",
+      "bindings": "cd source && wails3 generate bindings -d frontend/src/bindings",
+      "frontend:install": "cd source/frontend && npm install",
+      "frontend:lint": "cd source/frontend && npm run lint",
+      "frontend:test": "cd source/frontend && npm test",
+      "backend:lint": "cd source && go vet ./... && golangci-lint run",
+      "backend:test": "cd source && go test -race ./...",
       "test": [
-        "devbox run ui:test",
+        "devbox run frontend:test",
         "devbox run backend:test"
       ],
+      "prose:lint": [
+        "{ git ls-files -z -- '*.md' '*.go' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; git ls-files -z --others --exclude-standard -- '*.md' '*.go' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; } | xargs -0 vale"
+      ],
+      "refs:lint": "python3 scripts/lint/refs.py",
       "lint": [
-        "devbox run ui:lint",
+        "devbox run frontend:lint",
         "devbox run backend:lint",
         "devbox run prose:lint",
         "devbox run refs:lint"
       ],
-      "prose:lint": [
-        "{ git ls-files -z -- '*.md' '*.rs' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; git ls-files -z --others --exclude-standard -- '*.md' '*.rs' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; } | xargs -0 vale"
-      ],
-      "refs:lint": "python3 scripts/lint/refs.py"
+      "tools": "go install github.com/wailsapp/wails/v3/cmd/wails3@latest"
     }
+  },
+  "env": {
+    "MACOSX_DEPLOYMENT_TARGET": "14.0"
   }
 }
