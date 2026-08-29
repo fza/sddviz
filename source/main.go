@@ -22,6 +22,23 @@ func main() {
 		},
 		Server: application.ServerOptions{Host: "localhost", Port: 8080},
 		Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
+		Mac: application.MacOptions{
+			ApplicationShouldTerminateAfterLastWindowClosed: true,
+		},
+	})
+
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:            "sddviz",
+		Width:            1100,
+		Height:           720,
+		MinWidth:         720,
+		MinHeight:        480,
+		BackgroundColour: application.NewRGB(24, 26, 33),
+		URL:              "/",
+		Mac: application.MacWindow{
+			TitleBar:                application.MacTitleBarHiddenInset,
+			InvisibleTitleBarHeight: 50,
+		},
 	})
 
 	err := app.Run()

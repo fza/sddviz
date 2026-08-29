@@ -29,3 +29,42 @@ body {
 	font-variant-numeric: tabular-nums;
 	opacity: 0.6;
 }
+
+.app header {
+	margin-bottom: 0.5rem;
+}
+
+button {
+	align-self: flex-start;
+	padding: 0.4rem 0.9rem;
+	font: inherit;
+	border-radius: 6px;
+	border: 1px solid currentColor;
+	background: transparent;
+	color: inherit;
+}
+
+button:disabled {
+	opacity: 0.5;
+}
+
+.failure {
+	margin: 0;
+	color: #b3261e;
+}
+
+.repository {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 0.25rem 1rem;
+	margin: 0;
+}
+
+.repository dt {
+	opacity: 0.6;
+}
+
+.repository dd {
+	margin: 0;
+	font-variant-numeric: tabular-nums;
+}

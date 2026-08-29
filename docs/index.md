@@ -70,8 +70,22 @@ before it reaches sdd, which rejects one it cannot turn into an entry ID.
 The tests run against a fixture of real entry documents. One drives sdd's own `View` and `Search`
 over the store, which is what shows the port is satisfied rather than merely compiled against.
 
+## Opening a repository
+
+A repository is a checkout carrying `.sdd/config.yaml`, whose `graph_dir` names the graph inside it
+and defaults to `.sdd/graph`. Two service methods open one:
+
+- `OpenRepository(path)` reads that configuration, opens the store over the graph directory, and
+  reports the path, the graph directory, the repository identity, the revision, and how many entries
+  and undecodable documents it found. Every build answers it.
+- `ChooseRepositoryDirectory()` opens the native folder picker and returns what the reader chose,
+  without opening anything. Desktop builds alone answer it; elsewhere it reports that choosing a
+  directory needs a window system, and the path arrives another way.
+
+A repository declaring a `repo_id` is identified to sdd by it, so every clone shares one identity.
+One declaring none is local, and its path is the only identity available.
+
 ## Documentation sets
 
-No implementation set exists yet. The front end still shows one thing: `source/frontend/src/App.tsx`
-calls `BackendVersion` through its generated binding, which reports that the seam between the two
-halves works. Nothing yet renders a graph.
+No implementation set exists yet. The front end opens a repository and reports what its graph holds.
+Nothing yet draws the entries themselves.

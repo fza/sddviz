@@ -1,0 +1,3 @@
+graph_dir: .sdd/graph
+repo_id: example.com/fixture/repository
+language: en

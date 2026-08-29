@@ -52,6 +52,7 @@ tauri('s)?
 toolchain('s)?
 toolchains
 unbuilt
+undecodable
 unexported
 untracked
 vendored
