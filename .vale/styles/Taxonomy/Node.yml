@@ -1,0 +1,6 @@
+extends: existence
+message: "'%s' is the rendered object in the graph view. Naming an entry, write 'entry'."
+level: suggestion
+ignorecase: false
+tokens:
+  - 'nodes?'

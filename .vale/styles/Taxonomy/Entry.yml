@@ -1,0 +1,7 @@
+extends: existence
+message: "'%s' names an entry by a word SDD does not use - write 'entry', or 'signal'/'decision' where the type is known."
+level: error
+ignorecase: true
+tokens:
+  - 'cards?'
+  - 'vert(ex|ices)'

@@ -31,13 +31,20 @@ operator.
 ## Reading a graph
 
 Entry data is read from `.sdd/graph/**/*.md`, where an entry is YAML frontmatter above a markdown
-body. Search and linting are run through the `sdd` binary on `PATH`, addressed at a repository with
-the global `--graph-dir` flag. Browsing works without the binary, with those features absent.
+body. An entry's derived status, along with search and linting, comes from the `sdd` binary on
+`PATH`, addressed at a repository with the global `--graph-dir` flag. Browsing works without the
+binary, with those features absent.
+
+Status arrives through one call, `sdd view --layout "source(graph):as-list"`, which renders every
+entry on a line carrying its status and, where the entry is closed or superseded, the live entry
+that replaced it. sdd computes status from the whole graph and stores it nowhere, so no file holds
+the answer.
 
 Two properties of the tool's read surface bound what the viewer offers:
 
 - **Answers are rendered for a reader.** No graph read carries a machine-readable format;
-  `--format json` exists on `config` and `stats` alone. Only the ID lists in that output are consumed.
+  `--format json` exists on `config` and `stats` alone. What is consumed from that output is the
+  entry line, whose shape sdd's own unit tests hold.
 - **Reads follow the working tree.** The read surface takes no branch or revision argument. A branch
   is a session binding validated against a live registered checkout, and sddviz checks nothing out,
   so browsing an arbitrary ref is not offered.

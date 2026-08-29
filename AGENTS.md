@@ -29,9 +29,14 @@ Devbox and direnv. `devbox.json` pins Node.js 24 and a `rustup` toolchain for bo
 devbox run dev            # the application, front end in watch mode
 devbox run build          # a bundled application
 devbox run test           # both modules
-devbox run lint           # both modules
+devbox run lint           # both modules, prose, then the repository checks
+devbox run prose:lint     # prose alone - Vale over the repository
+devbox run refs:lint      # the repository checks - see scripts/lint/README.md
 devbox run ui:test        # one module; ui:lint, ui:install, backend:test, backend:lint likewise
 ```
+
+`scripts/git-hooks/commit-msg` refuses a commit message the rule refuses. `devbox`'s init hook
+points `core.hooksPath` at it on first entry into the directory.
 
 ## Module boundaries
 
@@ -60,9 +65,12 @@ devbox run ui:test        # one module; ui:lint, ui:install, backend:test, backe
 Entry data is structured on disk and is read straight from `.sdd/graph/**/*.md`. Everything the files
 do not answer is asked of `sdd`. The split is not a preference, it is which half fails how.
 
-- **Never rebuild what the tool owns.** Search across all three modes, the vector index under
-  `.sdd/index/`, and linting exist in sdd and are invoked, never reimplemented. Reaching for a local
-  version means capturing a signal, not writing one.
+- **Never rebuild what the tool owns.** Derived status, search across all three modes, the vector
+  index under `.sdd/index/`, and linting exist in sdd and are invoked, never reimplemented. Reaching
+  for a local version means capturing a signal, not writing one.
+- **Status is never computed here.** It comes from one `sdd view --layout "source(graph):as-list"`
+  call. sdd derives eight states from the whole graph and stores none of them, so a local rule is a
+  guess wearing an answer's clothes.
 - **Never parse a rendered entry.** sdd renders `show` for a reader and carries no machine-readable
   format for it. Where the tool's output is consumed at all, consume the ID lists rather than the
   prose around them, and isolate that in one module pinned to the version it reads.
@@ -102,13 +110,22 @@ record; the order in which the work happened does not.
 - **Mark an obsolete section, never remove it.** The heading stays and says it is obsolete, why, and
   where the rule went.
 
-### 4. Naming what SDD already names
+### 4. Vocabulary
 
-**SDD's vocabulary is SDD's.** Entry types, kinds, layers, ref kinds and status values keep the
-spelling upstream gives them, in prose and in code alike: `signal` and `decision`; the layers
-`strategic`, `conceptual`, `tactical`, `operational`, `process`; status values including `open`,
-`active`, `settled`, `closed-by`, `superseded-by`. Never coin a competing term for one of these, and
-never correct one toward a term this project prefers.
+**[`docs/rules.md`](docs/rules.md) fixes the vocabulary.** It binds all prose - documents, commit
+messages, code comments, sentences written to a reader - and every developer-facing value. It does
+not bind internal identifiers, and its §1 carries the scoping table.
+
+- **Its term, exact form, every single time.** `.vale/styles/Taxonomy/` carries the words, never a
+  list here. Banned and reported as **errors**: the competitors to `entry`. Explicit and reported as
+  **suggestions**: `node`, `tag`, `label`.
+- **SDD's words are used as SDD spells them**, deliberately, for everything the graph holds. That
+  licence stops at the graph; everything sddviz builds of its own takes a name the rules document
+  decides.
+- **Banned words stay banned. Never coin a competing term.** Needing a name the document lacks means
+  changing the document.
+- **In doubt: STOP AND ASK.**
+- **Correct on sight**, outranking consistency with surrounding text.
 
 ### 5. Prose is linted before it lands
 

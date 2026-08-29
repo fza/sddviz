@@ -7,8 +7,8 @@ filterable entry browser with search and a 3D view of the graph itself.
 sddviz is **read-only**. It never captures, never decides, and never writes to the repository it
 reads.
 
-Entry data is read from the graph files themselves, which store it as structured YAML. Search,
-linting and anything else the files do not answer are run through the `sdd` binary, so nothing that
+Entry data is read from the graph files themselves, which store it as structured YAML. Whether an
+entry still stands, along with search and linting, comes from the `sdd` binary, so nothing that
 belongs to the tool is rebuilt here.
 
 ## Status
@@ -29,8 +29,8 @@ who needs it, without a terminal and without an agent session.
 
 macOS, for now. Tauri builds Linux and Windows from the same source, and neither is exercised.
 
-`sdd` on `PATH`, at version 0.16.2 or later, for search and linting. Browsing a graph works without
-it, with those features absent.
+`sdd` on `PATH`, at version 0.16.2 or later, for entry status, search and linting. Browsing a graph
+works without it, with those features absent rather than guessed at.
 
 The build toolchain is pinned in `devbox.json` ([devbox](https://www.jetify.com/devbox) plus
 [direnv](https://direnv.net)). Entering the directory loads Node.js 24 and a Rust toolchain through
@@ -62,6 +62,10 @@ docs              What the implementation is, as it stands
 The two modules are peers. The back end owns every read, whether it comes from a file or from the
 tool, and the front end never reaches a filesystem path or a subprocess directly; the seam between
 them is the Tauri command interface.
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
 
 ## Limits
 

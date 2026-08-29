@@ -1,0 +1,7 @@
+extends: existence
+message: "'%s' - SDD calls it a topic, and an 'area-' prefixed one an area. Leave the word alone where a git tag or a UI label is meant."
+level: suggestion
+ignorecase: true
+tokens:
+  - 'tags?'
+  - 'labels?'

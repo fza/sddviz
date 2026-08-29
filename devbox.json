@@ -6,7 +6,8 @@
   },
   "shell": {
     "init_hook": [
-      "rustup default stable >/dev/null"
+      "rustup default stable >/dev/null",
+      "[ -n \"$(git rev-parse --git-dir 2>/dev/null)\" ] && [ -z \"$(git config --get core.hooksPath)\" ] && git config core.hooksPath scripts/git-hooks || true"
     ],
     "scripts": {
       "dev": "cd source/ui && npm run tauri dev",
@@ -23,11 +24,13 @@
       "lint": [
         "devbox run ui:lint",
         "devbox run backend:lint",
-        "devbox run prose:lint"
+        "devbox run prose:lint",
+        "devbox run refs:lint"
       ],
       "prose:lint": [
         "{ git ls-files -z -- '*.md' '*.rs' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; git ls-files -z --others --exclude-standard -- '*.md' '*.rs' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; } | xargs -0 vale"
-      ]
+      ],
+      "refs:lint": "python3 scripts/lint/refs.py"
     }
   }
 }
