@@ -29,6 +29,7 @@ installing anything.
 
 ```bash
 devbox run dev            # the application, front end in watch mode
+devbox run exec           # build the bundle and run it
 devbox run build          # a bundled application
 devbox run build:server   # the same application as an HTTP server
 devbox run bindings       # regenerate the typed front end bindings

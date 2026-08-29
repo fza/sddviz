@@ -15,6 +15,7 @@
     "scripts": {
       "dev": "cd source && wails3 task dev",
       "build": "cd source && wails3 task package",
+      "exec": "cd source && wails3 task package && ./bin/sddviz.app/Contents/MacOS/sddviz",
       "build:server": "cd source && wails3 task build:server",
       "bindings": "cd source && wails3 task common:generate:bindings",
       "frontend:install": "cd source/frontend && npm install",

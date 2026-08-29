@@ -38,6 +38,7 @@ application also needs the Xcode command line tools, since it links the system W
 
 ```bash
 devbox run dev            # the application, front end in watch mode
+devbox run exec           # build the bundle and run it
 devbox run build          # a signed `.app` bundle
 devbox run build:server   # the same application as an HTTP server
 devbox run sign           # sign the bundle for distribution
