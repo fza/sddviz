@@ -1,0 +1,201 @@
+# Derived from the FormatD-English rule of the same name, MIT licensed, with an
+# exception list. It reads any run of three to five capitals as an acronym, so
+# the domain names this repository writes daily, the system tokens that cannot
+# be expanded, and its own severity markers all need naming here.
+extends: conditional
+message: "'%s' has no definition."
+link: https://learn.microsoft.com/en-us/style-guide/acronyms
+level: suggestion
+ignorecase: false
+# Ensures that the existence of 'first' implies the existence of 'second'.
+first: '\b([A-Z]{3,5})\b'
+second: '(?:\b[A-Z][a-z]+ )+\(([A-Z]{3,5})\)'
+# Every exception is three to five letters, because `first` above matches
+# nothing else. A shorter token and a longer one -- `CI`, `ENOENT`, `EOPNOTSUPP`
+# -- never reach this rule at all, so listing one buys nothing.
+#
+# ... with the exception of these. Three groups sit below the set this rule
+# arrived with. The domain acronyms this project writes daily, which a reader
+# of an infrastructure document already knows and which no document expands.
+# This repository's own severity markers, which are defined terms rather than
+# emphasis. And the shell and system tokens, which name a variable, a stream
+# position or an error and cannot be expanded at all.
+exceptions:
+  - API
+  - ASP
+  - CLI
+  - CPU
+  - CSS
+  - CSV
+  - DEBUG
+  - DOM
+  - DPI
+  - FAQ
+  - GCC
+  - GNU
+  - GDB
+  - GET
+  - GPU
+  - GTK
+  - GUI
+  - HTML
+  - HTTP
+  - HTTPS
+  - IDE
+  - JAR
+  - JSON
+  - JSX
+  - LESS
+  - LLDB
+  - NET
+  - NOTE
+  - NVDA
+  - OSS
+  - PATH
+  - PDF
+  - PHP
+  - POST
+  - RAM
+  - REPL
+  - RSA
+  - SCM
+  - SCSS
+  - SDK
+  - SQL
+  - SSH
+  - SSL
+  - SVG
+  - TBD
+  - TCP
+  - TODO
+  - URI
+  - URL
+  - USB
+  - UTF
+  - XATTR
+  - XML
+  - XSS
+  - YAML
+  - ZIP
+  # Domain acronyms.
+  - DDEV
+  - ACL
+  - AMFI
+  - ANSI
+  - APFS
+  - ASCII
+  - AST
+  - CGO
+  - CIDR
+  - CMS
+  - CNI
+  - CQRS
+  - CRB
+  - CRD
+  - CRUD
+  - CSI
+  - CSRF
+  - DAG
+  - DBMS
+  - DDL
+  - DNS
+  - DSL
+  - DRY
+  - DSN
+  - DTS
+  - DYLD
+  - ETA
+  - FPM
+  - FUSE
+  - IAM
+  - ILM
+  - IPC
+  - JVM
+  - JWCC
+  - JWK
+  - JWKS
+  - JWT
+  - KAS
+  - LAPP
+  - LIFO
+  - LSP
+  - MCP
+  - MDM
+  - MITM
+  - NFS
+  - NGROK
+  - NTP
+  - OCI
+  - OIDC
+  - PEM
+  - POSIX
+  - PTY
+  - PVC
+  - RBAC
+  - REST
+  - RFC
+  - RPC
+  - SAN
+  - SAST
+  - SCP
+  - SDD
+  - SFTP
+  - SHA
+  - SPDY
+  - STS
+  - TCC
+  - TLD
+  - TLS
+  - TOFU
+  - TTL
+  - TTY
+  - TUI
+  - UDP
+  - UUID
+  - VPN
+  - VPS
+  - AFP
+  - BEAM
+  - BSD
+  - EBADF
+  - ELOOP
+  - EROFS
+  - EXDEV
+  - FAT
+  - FIFO
+  - FNV
+  - GCD
+  - HFS
+  - MARK
+  # Quoted, or YAML reads it as the null value and the exception list breaks.
+  - 'NULL'
+  - SMB
+  - SPI
+  - VFS
+  # This repository's own severity markers, defined in AGENTS.md. Uppercase.yml
+  # exempts the two that run to a phrase; these are the single words.
+  - ASK
+  - AND
+  - BAIL
+  - CAME
+  - FLAG
+  - HOW
+  - NEVER
+  - PAUSE
+  - STOP
+  - WHY
+  # Shell and system tokens.
+  - ABI
+  - CWD
+  - EBUSY
+  - EOF
+  - EPERM
+  - HEAD
+  - HOME
+  - MAX
+  - NUL
+  - OOM
+  - PID
+  - PWD
+  - SEC
+  - WAL

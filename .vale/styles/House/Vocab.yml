@@ -1,0 +1,33 @@
+# Derived from the FormatD-English set of the same name, MIT licensed, with three
+# tokens dropped. 'against' and 'above' are structural in this repository's
+# prose: a check runs against a surface, and a table sits above the paragraph
+# that reads it. `alias` is a domain term rather than loose wording: it names the
+# `aliases:` config key, an OpenSearch index alias, a YAML alias node and a Go
+# type alias, and every substitute names a different thing. Every other token the
+# set carries stays. `ensure`, `allows?` and `specify` follow the same reasoning as
+# `alias`: what remains of them here is the exported `Ensure` function a doc comment
+# must open with, the real `--allow` flag, a macOS button label, and a quoted CLI
+# error string.
+extends: existence
+message: "Verify your use of '%s' with the A-Z word list."
+link: 'https://learn.microsoft.com/en-us/style-guide'
+level: suggestion
+ignorecase: true
+tokens:
+  - accessible
+  - actionable
+  - alarm
+  - alert
+  - and/or
+  - as well as
+  - assure
+  - author
+  - avg
+  - beta
+  - he
+  - insure
+  - sample
+  # 'set' only as an instructional verb; the noun ('a set of', 'result set')
+  # and 'set up' are fine. See issue #34.
+  - set (?:a|an|the|your)
+  - she

@@ -1,0 +1,135 @@
+# Derived from the FormatD-English rule of the same name, MIT licensed, with the
+# exception list extended. A heading here names products, commands and acronyms whose
+# casing belongs to them rather than to a style guide: `fdbox` is lowercase in its own
+# right, and `RPC` and `HTTPS` are not words this repository may lowercase.
+extends: capitalization
+message: "'%s' should use sentence-style capitalization."
+link: https://learn.microsoft.com/en-us/style-guide/capitalization
+level: suggestion
+scope: heading
+match: $sentence
+# The accepted-spelling list is not a list of proper nouns. It carries ordinary
+# nouns this project writes daily, so consulting it here would pass `Worktree`
+# and `Namespace` in a heading. Every proper noun this rule allows is below.
+vocab: false
+indicators:
+  - ':'
+exceptions:
+  - Azure
+  - CLI
+  - Code
+  - Cosmos
+  - Docker
+  - Emmet
+  - I
+  - Kubernetes
+  - Linux
+  - macOS
+  - Marketplace
+  - MongoDB
+  - REPL
+  - Studio
+  - TypeScript
+  - URLs
+  - Visual
+  - VS
+  - Windows
+  # Acronyms this project writes in headings.
+  - DDEV
+  - ACL
+  - CA
+  - CI
+  - DB
+  - DNS
+  - GUI
+  - HTTP
+  - HTTPS
+  - JSON
+  - KV
+  - PHP
+  - PVC
+  - RPC
+  - SFTP
+  - SSH
+  - TLS
+  # Product, tool and command names, which keep their own casing.
+  - APFS
+  - Apple
+  - Claude
+  - Cobra
+  - Colima
+  - Deployer
+  - Devbox
+  - FSKit
+  - GitLab
+  - Go
+  - Helm
+  - Homebrew
+  - MariaDB
+  - MySQL
+  - OpenSearch
+  - Postgres
+  - Redis
+  - Semgrep
+  - Vale
+  - Valkey
+  - fdbox
+  - fdbox-unionfs
+  - fdboxd
+  - fdgate
+  - fdisolate
+  - mkcert
+  - rsync
+  # Section numbers. The rule splits a heading at each period, so a lettered
+  # section number reads as its own sentence and reports as miscapitalised.
+  # These numbers are permanent and cited by other documents.
+  - 5.3.A
+  - 5.3.B
+  - 5.3.C
+  - 5.3.E.7
+  - 5.3.E.8
+  - 5.3.E.9
+  # Acronyms this project writes in headings, second batch.
+  - E2E
+  # Product names a heading carries, whose casing belongs to the product.
+  - Percona
+  - XtraBackup
+  # Headings naming a check in scripts/lint/README.md. Each is the check's own
+  # name, which the runner prints and a developer passes on the command line.
+  - vocabulary
+  - vocabulary-shape
+  # The section of AGENTS.md that carries the rule those checks enforce.
+  - Vocabulary
+  # Headings that name a file. Sentence-casing one names a file that does not exist.
+  - AGENTS.md
+  - CLAUDE.md
+  # Headings opening with a lettered section number. The rule reads the number as a
+  # sentence of its own, so no casing of the words beside it clears the report, and the
+  # number itself is permanent.
+  - 5.3.E Hooks
+  - 5.3.E.10 Failure handling
+  # Headings in the vocabulary document that are the term itself, in the exact form the
+  # document fixes. Capitalising one renders it differently from the term it defines.
+  - agency cluster
+  - container engine
+  - container registry
+  - feat instance
+  - feat registry
+  - process environment
+  - lab
+  - native isolation
+  - path routing
+  # The project's own fixed spelling, which carries an internal capital.
+  - Go-Live
+  - Native Isolation
+  # Hyphenated compound of a vocabulary term the list carries in lowercase only.
+  - Deploy-target
+  # Headings inside the command-tree fixture, which a test compares byte for byte
+  # against the document it stands in for.
+  - 7. Command-Line Interface
+  - Command-Line Interface
+  - Cobra Command Tree
+  - 7. Command-line interface
+  - Command-line interface
+  - Cobra command tree
+

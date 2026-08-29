@@ -3,5 +3,21 @@
     "allow": [
       "mcp__sdd__*"
     ]
+  },
+  "worktree": {
+    "baseRef": "head"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/vale_new_prose.py\""
+          }
+        ]
+      }
+    ]
   }
 }

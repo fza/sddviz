@@ -1,0 +1,6 @@
+extends: existence
+message: "em dash - write a hyphen, or recast with a comma, colon, period or parentheses."
+level: error
+nonword: true
+tokens:
+  - '—'

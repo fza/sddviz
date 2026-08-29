@@ -1,0 +1,32 @@
+# Derived from the FormatD-English rule of the same name, MIT licensed, with an
+# exception list. Two adjacent all-caps words are usually emphasis, but in this
+# repository they are more often a SQL statement a driver runs verbatim, or one of
+# this repository's own severity markers. Neither may be lowercased: the first
+# would name a command that does not exist, the second is a defined term.
+extends: existence
+message: "Don't use all uppercase for emphasis."
+link: https://learn.microsoft.com/en-us/style-guide/capitalization
+level: suggestion
+nonword: true
+# Two or more consecutive all-caps words. A single one is almost always an
+# acronym, so it isn't flagged; adjacent acronym pairs ('HTTP GET') can still
+# trip this, but they're rare enough that the whole style guide source and
+# ~120 KB of technical prose produced no hits.
+tokens:
+  - '\b[A-Z]{2,}(?: [A-Z]{2,})+\b'
+
+exceptions:
+  # SQL statements a driver issues verbatim.
+  - SELECT VERSION
+  - VACUUM ANALYZE
+  - CREATE DATABASE
+  - CREATE DATABASE IF NOT EXISTS
+  - CREATE ROLE IF NOT EXISTS
+  - REVOKE ALL
+  - REASSIGN OWNED
+  - DROP ROLE
+  # Two acronyms side by side, which this rule cannot tell from emphasis.
+  - POSIX API
+  # This repository's own severity markers, defined in AGENTS.md.
+  - HOW IT CAME TO BE
+  - STOP AND ASK

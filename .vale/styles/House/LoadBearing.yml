@@ -1,0 +1,7 @@
+extends: existence
+message: "'%s' is banned — say what it bears: required, permanent, 'decides X', or state the actual consequence."
+level: error
+ignorecase: true
+nonword: false
+tokens:
+  - 'load[- ]bearing'

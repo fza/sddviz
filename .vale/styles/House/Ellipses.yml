@@ -1,0 +1,12 @@
+extends: existence
+message: "In general, don't use an ellipsis."
+link: https://learn.microsoft.com/en-us/style-guide/punctuation/ellipses
+nonword: true
+level: warning
+action:
+  name: remove
+tokens:
+  - '\.\.\.'
+  # U+2026. A single glyph and three dots read identically and are one rule; matching only
+  # the dots would pass every ellipsis an editor auto-substituted.
+  - '\x{2026}'

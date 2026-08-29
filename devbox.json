@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.18.0/.schema/devbox.schema.json",
+  "packages": {
+    "nodejs": "24",
+    "rustup": "1.29.0"
+  },
+  "shell": {
+    "init_hook": [
+      "rustup default stable >/dev/null"
+    ],
+    "scripts": {
+      "dev": "cd source/ui && npm run tauri dev",
+      "build": "cd source/ui && npm run tauri build",
+      "ui:install": "cd source/ui && npm install",
+      "ui:lint": "cd source/ui && npm run lint",
+      "ui:test": "cd source/ui && npm test",
+      "backend:lint": "cd source/backend && cargo clippy --all-targets -- -D warnings",
+      "backend:test": "cd source/backend && cargo test",
+      "test": [
+        "devbox run ui:test",
+        "devbox run backend:test"
+      ],
+      "lint": [
+        "devbox run ui:lint",
+        "devbox run backend:lint",
+        "devbox run prose:lint"
+      ],
+      "prose:lint": [
+        "{ git ls-files -z -- '*.md' '*.rs' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; git ls-files -z --others --exclude-standard -- '*.md' '*.rs' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; } | xargs -0 vale"
+      ]
+    }
+  }
+}

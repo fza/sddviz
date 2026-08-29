@@ -1,0 +1,33 @@
+# Derived from the FormatD-English rule of the same name, MIT licensed, with one
+# token dropped. `disabled` here names a feature state rather than a person: the
+# exported `reviewgate.Disabled` constructor and the live Kubernetes label
+# `fdbox.io/ssh-disabled-containers`. Every other term the set carries stays.
+extends: existence
+message: "Don't use language (such as '%s') that defines people by their disability."
+link: https://learn.microsoft.com/en-us/style-guide/a-z-word-list-term-collections/term-collections/accessibility-terms
+level: suggestion
+ignorecase: true
+tokens:
+  - a victim of
+  - able-bodied
+  - an epileptic
+  - birth defect
+  - crippled
+  - differently abled
+  - dumb
+  - handicapped
+  - handicaps
+  - healthy person
+  - hearing-impaired
+  - lame
+  - maimed
+  - mentally handicapped
+  - missing a limb
+  - mute
+  - non-verbal
+  - normal person
+  - sight-impaired
+  - slow learner
+  - stricken with
+  - suffers from
+  - vision-impaired

@@ -29,11 +29,11 @@ skill_scope: project
 supported_agents: [claude]
 
 # LLM provider settings (defaults shown — override here or in config.local.yaml).
-# llm:
-#   provider: claude-cli
-#   model: claude-sonnet-4-6
-#   timeout: 2m
-#   concurrency: 4
+llm:
+  provider: claude-cli
+  model: claude-opus-5
+  timeout: 2m
+  concurrency: 4
 
 # Background sync — controls how often the CLI auto-fetches to detect graph
 # changes from collaborators. Go duration string.

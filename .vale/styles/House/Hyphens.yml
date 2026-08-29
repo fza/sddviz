@@ -1,0 +1,24 @@
+# Derived from the FormatD-English rule of the same name, MIT licensed, with an
+# exception. The rule's own comment says it matches any word ending in `ly` and so
+# cannot tell an adverb from a noun. `only-feat` is neither: it is a segment of the
+# real fixture directory `feat-schema-hook-only-feat-valid`, and de-hyphenating it
+# names a path that does not exist.
+# Demoted from warning: right about an adverb, but it matches any word ending in "ly", so it
+# cannot tell `locally-built` (real) from `family-wide`, `hourly-update` or `apply-call` (not
+# adverbs at all). Two thirds of what it found here was the second kind.
+extends: existence
+message: "'%s' doesn't need a hyphen."
+link: https://learn.microsoft.com/en-us/style-guide/punctuation/dashes-hyphens/hyphens
+level: suggestion
+ignorecase: false
+nonword: true
+action:
+  name: edit
+  params:
+    - regex
+    - "-"
+    - " "
+tokens:
+  - '\b[^\s-]+ly-\w+\b'
+exceptions:
+  - only-feat

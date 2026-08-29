@@ -1,3 +1,31 @@
+# Editor and toolchain
+.idea/
+.DS_Store
+.devbox/
+
+# Machine-local, never committed
+.claude/worktrees/
+.tmp/
+.memory/
+CLAUDE.local.md
+
+# Derived state
+.index/
+.log/
+
+# Build output
+dist/
+node_modules/
+target/
+
+# Coverage and test reports, produced locally as well as in CI
+coverage/
+coverage.out
+coverage.xml
+junit.xml
+lcov.info
+
+# SDD machinery
 .sdd/tmp/
 .sdd/config.local.yaml
 .sdd/stats/

@@ -1,0 +1,33 @@
+# Derived from the FormatD-English rule of the same name, MIT licensed, with the bar
+# moved from grade 8 to grade 10. The rule still reports: a document above grade 10 is
+# still a finding, and nothing here turns the measurement off.
+#
+# Sentence length carries most of the score here. Splitting sentences alone took the
+# worst document in the tree from 13.89 to 7.81, and four more from just above 10 to
+# under it, with no domain term traded for a shorter word. A table contributes nothing:
+# the metric reads prose only, so a document that looks dense because it is mostly a
+# table scores on its paragraphs.
+#
+# The bar sits at 10 rather than 8 because 88 documents currently measure between the
+# two, and moving them is a sweep of its own rather than a rule setting. Whether every
+# one of them reaches 8 by splitting alone is unmeasured.
+# Written here rather than taken from Vale's Readability package, which carries seven
+# metrics. The other six rank the same sentences in the same order, so switching them on
+# reports one finding six times, and a whole package is a large dependency for the one
+# score that says anything new.
+#
+# Flesch–Kincaid is the one kept because it answers in a unit a writer can act on — a
+# school grade level — and because the formula and the bar are both written out below, so
+# no part of what this rule decides has to be taken on trust.
+#
+# Suggestion, not error: a grade level is a measurement rather than a defect, and prose
+# that earns a high one is often carrying a definition it cannot shorten away.
+extends: metric
+level: suggestion
+message: "Flesch–Kincaid grade level is %s. Aim below 10."
+link: https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests
+
+formula: |
+  (0.39 * (words / sentences)) + (11.8 * (syllables / words)) - 15.59
+
+condition: "> 10"
