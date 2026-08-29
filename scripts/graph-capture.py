@@ -16,7 +16,20 @@ the outcome.
 
 Three gates run in order and each stops the run: the leading block answers what an
 entry of that kind needs, Vale reports nothing on the body, and the tool's
-pre-flight reports nothing above low severity.
+pre-flight reports nothing above low severity. A draft clearing all three is captured
+in the same run, so a clean entry costs one call rather than two.
+
+A low-severity pre-flight finding never reaches the caller. Nothing is expected to act
+on one, and reporting it invites a rewrite the entry does not need.
+
+The capture passes `--preflight-verified`, recording that the pre-flight ran and
+reported nothing blocking. `--skip-preflight` would instead mark the entry as one
+nothing ever checked.
+
+A build offering no such flag still captures. That capture carries no pre-flight flag
+at all, so the tool runs its own pass a second time and the entry lands annotated the
+way any plain capture does. The second pass costs the run this script exists to save,
+and its findings reach the caller under the same rule: medium and high, never low.
 """
 
 import argparse
@@ -46,6 +59,9 @@ VALUE_FLAGS = {"kind": "--kind", "confidence": "--confidence", "intent": "--inte
 JSON_FLAGS = {"refs": "--refs", "involvement": "--involvement", "topic": "--topic"}
 
 SEVERITY = re.compile(r"^\s*\[(low|medium|high)\]")
+
+# The flag recording that the pre-flight already ran and settled, absent from older builds.
+VERIFIED_FLAG = "--preflight-verified"
 
 log = logging.getLogger("graph-capture")
 
@@ -100,8 +116,13 @@ def validate(front):
                          f"and these carry {len(areas)}")
 
 
-def command(front, body, dry_run):
-    """Build the argument vector `sdd new` runs, body included as one argument."""
+def command(front, body, preflight):
+    """Build the argument vector `sdd new` runs, body included as one argument.
+
+    The pre-flight flag decides what the run is: `--dry-run` reports and writes
+    nothing, `--preflight-verified` captures on a pre-flight already settled, and no
+    flag captures through the tool's own pre-flight.
+    """
     args = ["sdd", "new", front["type"], front["layer"], body]
 
     for key, flag in VALUE_FLAGS.items():
@@ -122,10 +143,18 @@ def command(front, body, dry_run):
     for item in front.get("attach") or []:
         args += ["--attach", str(item)]
 
-    if dry_run:
-        args.append("--dry-run")
+    if preflight:
+        args.append(preflight)
 
     return args
+
+
+def supports_verified_capture():
+    """Whether the installed tool takes the flag recording a settled pre-flight."""
+    result = subprocess.run(["sdd", "new", "--help"], cwd=REPO_ROOT,
+                            capture_output=True, text=True, check=False)
+
+    return VERIFIED_FLAG in result.stdout + result.stderr
 
 
 def lint_body(body, offset):
@@ -156,9 +185,45 @@ def shift(alert, path, offset):
 
 
 def preflight_findings(output):
-    """Every severity the pre-flight reported, in the order it reported them."""
-    return [match.group(1) for match in
-            (SEVERITY.match(line) for line in output.splitlines()) if match]
+    """Every pre-flight finding, its severity paired with its whole text.
+
+    A finding opens on the line carrying its severity and runs through the indented
+    lines below it, so a finding wrapped over several lines stays one finding and a
+    status line the tool prints beside its findings joins none of them.
+    """
+    findings = []
+
+    for line in output.splitlines():
+        match = SEVERITY.match(line)
+        if match:
+            findings.append((match.group(1), [line.strip()]))
+        elif findings and wraps(line):
+            findings[-1][1].append(line.strip())
+
+    return [(severity, " ".join(lines)) for severity, lines in findings]
+
+
+def wraps(line):
+    """Whether a line continues the finding above it rather than opening something new."""
+    return bool(line.strip()) and line[:1].isspace()
+
+
+def strip_low(output):
+    """The tool's own output, every low-severity finding dropped and every other line kept."""
+    kept = []
+    dropping = False
+
+    for line in output.splitlines():
+        match = SEVERITY.match(line)
+        if match:
+            dropping = match.group(1) == "low"
+        elif dropping and not wraps(line):
+            dropping = False
+
+        if not dropping:
+            kept.append(line)
+
+    return "\n".join(kept).strip()
 
 
 def run(args):
@@ -167,7 +232,7 @@ def run(args):
 
     alerts = lint_body(body, offset)
     if alerts:
-        log.error("Vale reports %s on the body:",
+        log.error("Vale reports %s on the body, so the pre-flight does not run:",
                   "one finding" if len(alerts) == 1 else f"{len(alerts)} findings")
         for alert in alerts:
             log.error("  %s", alert)
@@ -175,29 +240,43 @@ def run(args):
 
     log.info("body clears Vale")
 
-    result = subprocess.run(command(front, body, dry_run=True), cwd=REPO_ROOT,
+    result = subprocess.run(command(front, body, "--dry-run"), cwd=REPO_ROOT,
                             capture_output=True, text=True, check=False)
     output = result.stdout + result.stderr
     if result.returncode != 0:
         log.error("pre-flight refused the draft:\n%s", output.strip())
         return 1
 
-    findings = preflight_findings(output)
-    blocking = [severity for severity in findings if severity != "low"]
-    if output.strip():
-        log.info("pre-flight:\n%s", output.strip())
+    blocking = [text for severity, text in preflight_findings(output) if severity != "low"]
+    counted = "one finding" if len(blocking) == 1 else f"{len(blocking)} findings"
 
     if blocking and not args.force:
-        log.error("pre-flight reports %s above low severity - fix the draft, or pass --force "
-                  "to capture anyway",
-                  "one finding" if len(blocking) == 1 else f"{len(blocking)} findings")
+        log.error("pre-flight reports %s above low severity:", counted)
+        for text in blocking:
+            log.error("  %s", text)
+        log.error("fix the draft and run the script again, or pass --force to capture anyway")
         return 2
 
-    if args.dry_run:
-        log.info("draft passes; nothing captured")
-        return 0
+    if blocking:
+        log.warning("capturing despite %s above low severity:", counted)
+        for text in blocking:
+            log.warning("  %s", text)
+    else:
+        log.info("pre-flight clears the draft")
 
-    result = subprocess.run(command(front, body, dry_run=False), cwd=REPO_ROOT, check=False)
+    if supports_verified_capture():
+        result = subprocess.run(command(front, body, VERIFIED_FLAG), cwd=REPO_ROOT, check=False)
+        return result.returncode
+
+    log.info("the installed tool takes no %s, so the capture runs the pre-flight again",
+             VERIFIED_FLAG)
+
+    result = subprocess.run(command(front, body, None), cwd=REPO_ROOT,
+                            capture_output=True, text=True, check=False)
+    reported = strip_low(result.stdout + result.stderr)
+    if reported:
+        log.info("%s", reported)
+
     return result.returncode
 
 
@@ -208,8 +287,6 @@ def main():
                "whatever else the kind needs: intent, refs, closes, supersedes, participants, "
                "summary) above the entry body.")
     parser.add_argument("draft", help="path to the draft Markdown file")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="stop after the pre-flight, capturing nothing")
     parser.add_argument("--force", action="store_true",
                         help="capture despite pre-flight findings above low severity")
     parsed = parser.parse_args()

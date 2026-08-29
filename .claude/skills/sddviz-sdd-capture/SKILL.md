@@ -43,12 +43,37 @@ Three gates, stopping at the first that reports.
 
 1. The draft shape, and this repository's rule that `topics` carry exactly one `area-` label.
 2. Vale over the body, read from a real Markdown file. New prose clears every error, warning and
-   suggestion.
+   suggestion. A Vale finding stops the run, and the pre-flight never runs on a body Vale rejects.
 3. `sdd new --dry-run`, the tool's own pre-flight. Anything above low severity blocks.
 
-Then it captures, and `sdd` commits the entry itself.
+The script captures a draft clearing all three in the same run, and `sdd` commits the entry. The
+capture passes `--preflight-verified`, which records that the pre-flight ran and reported nothing
+blocking, where `--skip-preflight` would mark the entry as one nothing ever checked.
 
-Flags: `--dry-run` stops after the pre-flight and captures nothing. `--force` captures despite
+A build listing no such flag still captures. The script reads `sdd new --help` to tell. Where the
+flag is missing, the capture carries no pre-flight flag at all, so the tool runs its own pass a
+second time and the entry lands the way any plain capture does. That second pass costs the run the
+flag exists to save. Whatever it reports reaches you under the same rule: medium and high, never
+low.
+
+**A low-severity pre-flight finding never reaches you.** Nobody acts on one, and the script strips
+every one before it reports.
+
+`--force` is the only flag. It captures despite pre-flight findings above low severity, and it is
+for a finding you judge wrong, never for one you would rather not fix.
+
+## The repair loop
+
+A run reports findings and captures nothing. Edit the same draft file, run the script again. Repeat
+until it captures. Nothing carries over between runs, so the draft file is the whole state.
+
+```bash
+python3 scripts/graph-capture.py .tmp/entry.md   # reports two findings above low severity
+# edit .tmp/entry.md
+python3 scripts/graph-capture.py .tmp/entry.md   # clean, captured, committed
+```
+
+Exit codes: `0` captured, `1` refused by the draft shape, by Vale, or by the tool, `2` blocked on
 pre-flight findings above low severity.
 
 ## What it does not do
