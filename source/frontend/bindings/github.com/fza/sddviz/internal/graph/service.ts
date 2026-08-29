@@ -31,6 +31,15 @@ export function ChooseRepositoryDirectory(): $CancellablePromise<string> {
 }
 
 /**
+ * Entries reports every entry of the open repository, newest first. The order
+ * is the one an entry ID already carries, since it opens with the moment the
+ * entry was written.
+ */
+export function Entries(): $CancellablePromise<$models.Entry[] | null> {
+    return $Call.ByID(1370568648);
+}
+
+/**
  * OpenRepository opens the graph of the repository at the given path and
  * reports what it holds.
  */

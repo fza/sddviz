@@ -85,7 +85,23 @@ and defaults to `.sdd/graph`. Two service methods open one:
 A repository declaring a `repo_id` is identified to sdd by it, so every clone shares one identity.
 One declaring none is local, and its path is the only identity available.
 
+## What the front end shows
+
+A sidebar names the two views and the main area draws the selected one. Opening a repository sits in
+the sidebar's footer, beside the path and the entry count of the one that is open.
+
+- **Entries** is a table: identifier, layer, kind, derived status, summary. It carries no filters.
+- **Graph** draws one entry as a single node, through `3d-force-graph` over three.js.
+
+`Entries()` reports one record per entry, newest first, since an entry's identifier opens with the
+moment it was written. Each record carries the frontmatter fields and the derived status, with the
+live head named where an entry is closed or superseded. Status comes from one `View` call over
+`source(graph):as-list`, matched to entries by identifier, and the line it is read from is the one
+sdd's own unit tests hold.
+
+Opening a repository mounts sdd over the store. Its session and staged-blob stores sit in scratch the
+viewer owns, because sdd requires both and a read writes to neither.
+
 ## Documentation sets
 
-No implementation set exists yet. The front end opens a repository and reports what its graph holds.
-Nothing yet draws the entries themselves.
+No implementation set exists yet.

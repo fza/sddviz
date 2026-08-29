@@ -1,70 +1,204 @@
 :root {
-	color-scheme: light dark;
+	color-scheme: dark;
 	font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+	font-size: 14px;
+	--background: #1c1c1e;
+	--sidebar: #232326;
+	--border: #35353a;
+	--text: #f2f2f7;
+	--muted: #8e8e93;
+	--selected: #0a63d2;
+}
+
+* {
+	box-sizing: border-box;
 }
 
 body {
 	margin: 0;
+	background: var(--background);
+	color: var(--text);
+	overflow: hidden;
 }
 
 .app {
+	display: grid;
+	grid-template-columns: 240px 1fr;
+	height: 100vh;
+}
+
+.sidebar {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
-	padding: 2rem;
+	background: var(--sidebar);
+	border-right: 1px solid var(--border);
+	padding-top: 42px;
 }
 
-.app h1 {
+.sidebar .section {
+	margin: 0 0 0.4rem;
+	padding: 0 1rem;
+	font-size: 0.78rem;
+	color: var(--muted);
+}
+
+.sidebar ul {
+	list-style: none;
 	margin: 0;
-	font-size: 1.5rem;
+	padding: 0 0.5rem;
+	flex: 1;
 }
 
-.tagline {
-	margin: 0;
-	opacity: 0.8;
-}
-
-.status {
-	margin: 0;
-	font-variant-numeric: tabular-nums;
-	opacity: 0.6;
-}
-
-.app header {
-	margin-bottom: 0.5rem;
-}
-
-button {
-	align-self: flex-start;
-	padding: 0.4rem 0.9rem;
+.sidebar li button {
+	display: block;
+	width: 100%;
+	padding: 0.4rem 0.6rem;
+	margin-bottom: 0.15rem;
+	text-align: left;
 	font: inherit;
-	border-radius: 6px;
-	border: 1px solid currentColor;
-	background: transparent;
 	color: inherit;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
 }
 
-button:disabled {
+.sidebar li button:hover {
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar li button.selected {
+	background: var(--selected);
+	color: #fff;
+}
+
+.sidebar footer {
+	border-top: 1px solid var(--border);
+	padding: 0.75rem 1rem;
+}
+
+.sidebar footer button {
+	width: 100%;
+	padding: 0.35rem 0.6rem;
+	font: inherit;
+	color: inherit;
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+}
+
+.sidebar footer button:disabled {
 	opacity: 0.5;
 }
 
+.opened {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	margin: 0.6rem 0 0;
+	font-size: 0.78rem;
+	color: var(--muted);
+}
+
+.opened .path {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	direction: rtl;
+}
+
+main {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	padding: 42px 1.5rem 1.5rem;
+}
+
+main header h1 {
+	margin: 0 0 1rem;
+	font-size: 1.3rem;
+}
+
 .failure {
-	margin: 0;
-	color: #b3261e;
+	margin: 0 0 1rem;
+	padding: 0.6rem 0.8rem;
+	border-radius: 6px;
+	background: rgba(179, 38, 30, 0.18);
+	color: #ff9a90;
 }
 
-.repository {
-	display: grid;
-	grid-template-columns: max-content 1fr;
-	gap: 0.25rem 1rem;
-	margin: 0;
+.empty {
+	color: var(--muted);
 }
 
-.repository dt {
-	opacity: 0.6;
+.graph {
+	flex: 1;
+	min-height: 0;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow: hidden;
 }
 
-.repository dd {
-	margin: 0;
-	font-variant-numeric: tabular-nums;
+.entries {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.85rem;
+	display: block;
+	overflow: auto;
+	min-height: 0;
+}
+
+.entries th {
+	position: sticky;
+	top: 0;
+	background: var(--background);
+	text-align: left;
+	font-weight: 500;
+	color: var(--muted);
+	padding: 0.4rem 0.6rem;
+	border-bottom: 1px solid var(--border);
+}
+
+.entries td {
+	padding: 0.4rem 0.6rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	vertical-align: top;
+}
+
+.entries .identifier {
+	font-family: ui-monospace, SFMono-Regular, monospace;
+	font-size: 0.78rem;
+	white-space: nowrap;
+}
+
+.entries .summary {
+	max-width: 48ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--muted);
+}
+
+.status {
+	display: inline-block;
+	padding: 0.05rem 0.4rem;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.status-active,
+.status-open {
+	background: rgba(52, 199, 89, 0.18);
+	color: #7ee2a0;
+}
+
+.status-superseded-by,
+.status-closed-by {
+	background: rgba(142, 142, 147, 0.2);
+	color: var(--muted);
+}
+
+.status-settled {
+	background: rgba(10, 99, 210, 0.25);
+	color: #8ab6f0;
 }

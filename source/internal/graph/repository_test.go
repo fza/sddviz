@@ -74,3 +74,48 @@ func TestOpenRepositoryRefusesWhatIsNotARepository(t *testing.T) {
 		})
 	}
 }
+
+func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
+	service := graph.NewService()
+
+	_, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+
+	entries, err := service.Entries(t.Context())
+	if err != nil {
+		t.Fatalf("Entries: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("the repository reported %d entries, expected the ones its graph carries", len(entries))
+	}
+
+	for _, entry := range entries {
+		if entry.ID == "" {
+			t.Error("an entry carries no id")
+		}
+		if entry.Type == "" || entry.Layer == "" {
+			t.Errorf("%s carries no type or layer, so its frontmatter was not read", entry.ID)
+		}
+		if entry.Summary == "" {
+			t.Errorf("%s carries no summary", entry.ID)
+		}
+		if entry.Status.Kind == "" {
+			t.Errorf("%s carries no derived status, which is what the view call exists to supply", entry.ID)
+		}
+	}
+
+	if entries[0].ID < entries[1].ID {
+		t.Error("the entries are not ordered newest first")
+	}
+}
+
+func TestEntriesRefusesWithoutAnOpenRepository(t *testing.T) {
+	service := graph.NewService()
+
+	_, err := service.Entries(t.Context())
+	if err == nil {
+		t.Fatal("Entries answered though no repository is open")
+	}
+}

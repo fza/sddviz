@@ -7,5 +7,7 @@ export {
 };
 
 export type {
-    Repository
+    Entry,
+    Repository,
+    Status
 } from "./models.js";

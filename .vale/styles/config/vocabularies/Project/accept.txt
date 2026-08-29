@@ -14,6 +14,8 @@ Unexported
 Vite('s)?
 WebView
 Xcode('s)?
+accessor
+accessors
 backticked
 cgo
 darwin

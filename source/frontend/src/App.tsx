@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Service } from '../bindings/github.com/fza/sddviz/internal/graph';
-import type { Repository } from '../bindings/github.com/fza/sddviz/internal/graph/models';
+import type { Entry, Repository } from '../bindings/github.com/fza/sddviz/internal/graph/models';
+import { EntriesTable } from './views/EntriesTable';
+import { GraphView } from './views/GraphView';
+
+type View = 'graph' | 'entries';
+
+const viewTitles: Record<View, string> = {
+	graph: 'Graph',
+	entries: 'Entries',
+};
 
 export function App() {
-	const [backendVersion, setBackendVersion] = useState<string | null>(null);
+	const [view, setView] = useState<View>('graph');
 	const [repository, setRepository] = useState<Repository | null>(null);
+	const [entries, setEntries] = useState<Entry[]>([]);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [opening, setOpening] = useState(false);
-
-	useEffect(() => {
-		Service.BackendVersion()
-			.then(setBackendVersion)
-			.catch((cause: unknown) => setFailure(`${cause}`));
-	}, []);
 
 	const openRepository = useCallback(async () => {
 		setFailure(null);
@@ -23,6 +27,7 @@ export function App() {
 				return;
 			}
 			setRepository(await Service.OpenRepository(path));
+			setEntries((await Service.Entries()) ?? []);
 		} catch (cause: unknown) {
 			setFailure(`${cause}`);
 		} finally {
@@ -31,44 +36,46 @@ export function App() {
 	}, []);
 
 	return (
-		<main className="app">
-			<header>
-				<h1>sddviz</h1>
-				<p className="tagline">A read-only viewer for SDD decision graphs.</p>
-			</header>
+		<div className="app">
+			<nav className="sidebar">
+				<p className="section">Repository</p>
+				<ul>
+					{(Object.keys(viewTitles) as View[]).map((candidate) => (
+						<li key={candidate}>
+							<button
+								type="button"
+								className={candidate === view ? 'selected' : ''}
+								onClick={() => setView(candidate)}
+							>
+								{viewTitles[candidate]}
+							</button>
+						</li>
+					))}
+				</ul>
 
-			<button type="button" onClick={openRepository} disabled={opening}>
-				{opening ? 'Opening' : 'Open a repository'}
-			</button>
-
-			{failure !== null && <p className="failure">{failure}</p>}
-
-			{repository !== null && (
-				<dl className="repository">
-					<dt>Path</dt>
-					<dd>{repository.path}</dd>
-					<dt>Graph</dt>
-					<dd>{repository.graphDir}</dd>
-					{repository.repoId !== '' && (
-						<>
-							<dt>Identity</dt>
-							<dd>{repository.repoId}</dd>
-						</>
+				<footer>
+					<button type="button" onClick={openRepository} disabled={opening}>
+						{opening ? 'Opening' : 'Open a repository'}
+					</button>
+					{repository !== null && (
+						<p className="opened">
+							<span className="path">{repository.path}</span>
+							<span className="count">{repository.entryCount} entries</span>
+						</p>
 					)}
-					<dt>Entries</dt>
-					<dd>{repository.entryCount}</dd>
-					{repository.unreadableCount > 0 && (
-						<>
-							<dt>Undecodable</dt>
-							<dd>{repository.unreadableCount}</dd>
-						</>
-					)}
-				</dl>
-			)}
+				</footer>
+			</nav>
 
-			<p className="status">
-				{backendVersion !== null ? `Backend ${backendVersion}` : 'Connecting to the backend'}
-			</p>
-		</main>
+			<main>
+				<header>
+					<h1>{viewTitles[view]}</h1>
+				</header>
+
+				{failure !== null && <p className="failure">{failure}</p>}
+
+				{view === 'graph' && <GraphView entry={entries[0] ?? null} />}
+				{view === 'entries' && <EntriesTable entries={entries} />}
+			</main>
+		</div>
 	);
 }

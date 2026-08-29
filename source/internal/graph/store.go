@@ -30,6 +30,7 @@ var (
 	errAttachmentNamesAPath    = errors.New("attachment names a path rather than a file")
 	errNoFrontmatter           = errors.New("the document carries no YAML frontmatter")
 	errUnterminatedFrontmatter = errors.New("the document's YAML frontmatter is unterminated")
+	errNotAnEntryPath          = errors.New("not the path of an entry")
 )
 
 // entryPath matches the layout an entry file takes inside the graph directory,
@@ -262,4 +263,15 @@ func parseEntryDocument(logicalPath string, raw []byte) (sdd.EntryDocument, erro
 		Frontmatter: frontmatter,
 		Body:        strings.TrimSpace(body),
 	}, nil
+}
+
+// entryID turns a document's path inside the graph into the entry ID it
+// carries: `2026/08/29-205109-s-prc-xv4.md` names `20260829-205109-s-prc-xv4`.
+func entryID(logicalPath string) (string, error) {
+	if !entryPath.MatchString(logicalPath) {
+		return "", fmt.Errorf("%s: %w", logicalPath, errNotAnEntryPath)
+	}
+	trimmed := strings.TrimSuffix(logicalPath, ".md")
+	parts := strings.SplitN(trimmed, "/", 3)
+	return parts[0] + parts[1] + parts[2], nil
 }
