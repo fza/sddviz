@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"log/slog"
 	"os"
 
@@ -14,11 +15,15 @@ import (
 var assets embed.FS
 
 func main() {
+	flag.Parse()
+
+	// The first argument names a repository to open at once, which is the only
+	// way in where no window system offers a directory picker.
 	app := application.New(application.Options{
 		Name:        "sddviz",
 		Description: "A read-only viewer for SDD decision graphs",
 		Services: []application.Service{
-			application.NewService(graph.NewService()),
+			application.NewService(graph.NewService(flag.Arg(0))),
 		},
 		Server: application.ServerOptions{Host: "localhost", Port: 8080},
 		Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets)},

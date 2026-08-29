@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Service } from '../bindings/github.com/fza/sddviz/internal/graph';
 import type { Entry, Repository } from '../bindings/github.com/fza/sddviz/internal/graph/models';
 import { EntriesTable } from './views/EntriesTable';
@@ -17,6 +17,24 @@ export function App() {
 	const [entries, setEntries] = useState<Entry[]>([]);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [opening, setOpening] = useState(false);
+
+	// A path on the command line opens a repository before the reader asks,
+	// which is the only way in where no directory picker exists.
+	useEffect(() => {
+		Service.Startup()
+			.then(async (state) => {
+				if (!state.requested) {
+					return;
+				}
+				if (state.failure !== '') {
+					setFailure(state.failure);
+					return;
+				}
+				setRepository(state.repository);
+				setEntries((await Service.Entries()) ?? []);
+			})
+			.catch((cause: unknown) => setFailure(`${cause}`));
+	}, []);
 
 	const openRepository = useCallback(async () => {
 		setFailure(null);

@@ -8,7 +8,7 @@ import (
 )
 
 func TestOpenRepositoryReportsWhatTheGraphHolds(t *testing.T) {
-	service := graph.NewService()
+	service := graph.NewService("")
 
 	opened, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -36,7 +36,7 @@ func TestOpenRepositoryReportsWhatTheGraphHolds(t *testing.T) {
 }
 
 func TestOpenRepositoryDefaultsTheGraphDirectory(t *testing.T) {
-	service := graph.NewService()
+	service := graph.NewService("")
 
 	opened, err := service.OpenRepository(t.Context(), "testdata/defaulted")
 	if err != nil {
@@ -51,7 +51,7 @@ func TestOpenRepositoryDefaultsTheGraphDirectory(t *testing.T) {
 }
 
 func TestOpenRepositoryRefusesWhatIsNotARepository(t *testing.T) {
-	service := graph.NewService()
+	service := graph.NewService("")
 
 	cases := []struct {
 		name string
@@ -76,7 +76,7 @@ func TestOpenRepositoryRefusesWhatIsNotARepository(t *testing.T) {
 }
 
 func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
-	service := graph.NewService()
+	service := graph.NewService("")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -112,10 +112,60 @@ func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
 }
 
 func TestEntriesRefusesWithoutAnOpenRepository(t *testing.T) {
-	service := graph.NewService()
+	service := graph.NewService("")
 
 	_, err := service.Entries(t.Context())
 	if err == nil {
 		t.Fatal("Entries answered though no repository is open")
+	}
+}
+
+func TestStartupOpensThePathTheCommandLineNamed(t *testing.T) {
+	service := graph.NewService("testdata/repository")
+
+	state := service.Startup(t.Context())
+	if !state.Requested {
+		t.Fatal("a path was given, so the startup state should report one was requested")
+	}
+	if state.Failure != "" {
+		t.Fatalf("opening the named repository failed: %s", state.Failure)
+	}
+	if state.Repository.EntryCount != 2 {
+		t.Errorf("the opened repository reports %d entries", state.Repository.EntryCount)
+	}
+
+	entries, err := service.Entries(t.Context())
+	if err != nil {
+		t.Fatalf("Entries after startup: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Errorf("the service reported %d entries after startup", len(entries))
+	}
+}
+
+func TestStartupReportsAPathThatWillNotOpen(t *testing.T) {
+	service := graph.NewService("testdata/notarepo")
+
+	state := service.Startup(t.Context())
+	if !state.Requested {
+		t.Fatal("a path was given, so the startup state should report one was requested")
+	}
+	if state.Failure == "" {
+		t.Fatal("a path that is not a repository opened without complaint")
+	}
+	if state.Repository.Path != "" {
+		t.Error("a failed startup reports a repository anyway")
+	}
+}
+
+func TestStartupWithNoPathRequestsNothing(t *testing.T) {
+	service := graph.NewService("")
+
+	state := service.Startup(t.Context())
+	if state.Requested {
+		t.Error("no path was given, yet the startup state reports one was requested")
+	}
+	if state.Failure != "" {
+		t.Errorf("no path was given, yet startup failed: %s", state.Failure)
 	}
 }

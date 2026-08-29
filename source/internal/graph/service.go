@@ -27,17 +27,60 @@ var errNoRepositoryOpen = errors.New("no repository is open")
 // OpenRepository is the same call in both.
 var ErrNoWindowSystem = errors.New("choosing a directory needs a window system")
 
+// StartupState is what the front end learns when it starts: the repository a
+// path on the command line opened, or why that path did not open. Both are
+// empty where no path was given.
+type StartupState struct {
+	Repository Repository `json:"repository"`
+	Failure    string     `json:"failure"`
+	Requested  bool       `json:"requested"`
+}
+
 // Service is the surface the front end calls.
 type Service struct {
+	startupPath string
+
 	mu          sync.RWMutex
 	store       *Store
 	application *sdd.Application
 	project     sdd.ProjectID
 	open        Repository
+	startup     StartupState
+	started     bool
 }
 
-func NewService() *Service {
-	return &Service{}
+// NewService takes the repository path the command line named, which is empty
+// where it named none.
+func NewService(startupPath string) *Service {
+	return &Service{startupPath: startupPath}
+}
+
+// Startup opens the repository the command line named and reports what
+// happened. Calling it again returns the same answer rather than reopening.
+func (s *Service) Startup(ctx context.Context) StartupState {
+	s.mu.RLock()
+	started, state := s.started, s.startup
+	s.mu.RUnlock()
+	if started {
+		return state
+	}
+
+	state = StartupState{Requested: s.startupPath != ""}
+	if state.Requested {
+		opened, err := s.OpenRepository(ctx, s.startupPath)
+		if err != nil {
+			state.Failure = err.Error()
+		} else {
+			state.Repository = opened
+		}
+	}
+
+	s.mu.Lock()
+	s.startup = state
+	s.started = true
+	s.mu.Unlock()
+
+	return state
 }
 
 // BackendVersion reports the running back end, which is how the front end

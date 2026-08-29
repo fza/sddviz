@@ -34,6 +34,17 @@ export interface Repository {
 }
 
 /**
+ * StartupState is what the front end learns when it starts: the repository a
+ * path on the command line opened, or why that path did not open. Both are
+ * empty where no path was given.
+ */
+export interface StartupState {
+    "repository": Repository;
+    "failure": string;
+    "requested": boolean;
+}
+
+/**
  * Status is an entry's derived lifecycle state. sdd computes it from the whole
  * graph and stores it nowhere, so it arrives on the line its view renders.
  */

@@ -73,7 +73,13 @@ over the store, which is what shows the port is satisfied rather than merely com
 ## Opening a repository
 
 A repository is a checkout carrying `.sdd/config.yaml`, whose `graph_dir` names the graph inside it
-and defaults to `.sdd/graph`. Two service methods open one:
+and defaults to `.sdd/graph`.
+
+The first command-line argument names a repository to open at once: `sddviz <path>`. `Startup()`
+reports what that opened, or why it did not open, and reports that nothing was requested where the
+argument was absent. It is the only way in where no window system offers a directory picker.
+
+Two further service methods open one on demand:
 
 - `OpenRepository(path)` reads that configuration, opens the store over the graph directory, and
   reports the path, the graph directory, the repository identity, the revision, and how many entries

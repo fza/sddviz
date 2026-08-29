@@ -103,7 +103,12 @@ body {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	/* Truncate a long path at its start, where the uninformative half is, while
+	   `plaintext` keeps the path itself reading left to right. Without it the
+	   leading separator is reordered to the end. */
 	direction: rtl;
+	unicode-bidi: plaintext;
+	text-align: left;
 }
 
 main {

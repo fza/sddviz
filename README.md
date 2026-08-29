@@ -48,6 +48,12 @@ devbox run lint           # both halves, prose, then the repository checks
 
 `devbox run bindings` regenerates the typed front end bindings after a service method changes.
 
+The application takes a repository path and opens it at once:
+
+```bash
+devbox run exec -- ~/some/repository
+```
+
 ## Signing
 
 The bundle identifier is `com.fza.sddviz`, and every build carries the hardened runtime. The signing

@@ -53,3 +53,11 @@ export function OpenRepository(path: string): $CancellablePromise<$models.Reposi
 export function OpenedRepository(): $CancellablePromise<$models.Repository> {
     return $Call.ByID(2284182977);
 }
+
+/**
+ * Startup opens the repository the command line named and reports what
+ * happened. Calling it again returns the same answer rather than reopening.
+ */
+export function Startup(): $CancellablePromise<$models.StartupState> {
+    return $Call.ByID(2637847689);
+}
