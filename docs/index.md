@@ -20,7 +20,20 @@ directory. Its build output lands in `source/frontend/dist`, which the module em
 - The front end reaches the back end only through generated bindings over Wails services, and reaches
   no filesystem path and no subprocess directly.
 - Services carry data. Rendering happens in the front end.
-- CGO is allowed. A desktop build needs it for the WebView binding; a server build does not.
+- cgo is allowed. A desktop build needs it for the WebView binding; a server build does not.
+
+## The macOS build
+
+`source/Taskfile.yml` and `source/build/` carry the build system. `source/build/config.yml` is the
+single place the bundle's identity is written, and `wails3 task common:update:build-assets`
+regenerates `Info.plist` from it. The identifier is `com.fza.sddviz`.
+
+A desktop build links the system WebView through cgo, which pulls in `-lresolv`. Built inside a
+package manager's environment, that resolves against the manager's own copy of the library, and dyld
+refuses to load it under the hardened runtime because the process and the mapped file carry
+different Team IDs. The bundle step repoints such a library at its system copy and then fails the
+build if anything outside `/usr/lib` or `/System` remains, so the failure lands at build time rather
+than at launch.
 
 ## Reading a graph
 

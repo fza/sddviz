@@ -13,10 +13,10 @@
       "./scripts/dev-setup.sh --check"
     ],
     "scripts": {
-      "dev": "cd source && wails3 dev",
-      "build": "cd source && wails3 build",
-      "build:server": "cd source && go build -tags server -o ../dist/sddviz-server .",
-      "bindings": "cd source && wails3 generate bindings -d frontend/src/bindings",
+      "dev": "cd source && wails3 task dev",
+      "build": "cd source && wails3 task package",
+      "build:server": "cd source && wails3 task build:server",
+      "bindings": "cd source && wails3 task common:generate:bindings",
       "frontend:install": "cd source/frontend && npm install",
       "frontend:lint": "cd source/frontend && npm run lint",
       "frontend:test": "cd source/frontend && npm test",
@@ -36,10 +36,13 @@
         "devbox run prose:lint",
         "devbox run refs:lint"
       ],
-      "tools": "go install github.com/wailsapp/wails/v3/cmd/wails3@latest"
+      "tools": "go install github.com/wailsapp/wails/v3/cmd/wails3@latest",
+      "sign": "cd source && wails3 task darwin:sign",
+      "sign:notarize": "cd source && wails3 task darwin:sign:notarize"
     }
   },
   "env": {
-    "MACOSX_DEPLOYMENT_TARGET": "14.0"
+    "MACOSX_DEPLOYMENT_TARGET": "14.0",
+    "SDDVIZ_SIGN_IDENTITY": "Apple Development: Felix Zandanel (ER7AP28HL7)"
   }
 }

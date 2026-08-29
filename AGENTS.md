@@ -49,7 +49,7 @@ points `core.hooksPath` at it on first entry into the directory.
   filesystem path and never runs a subprocess.
 - **A Wails service is the seam**, and it carries data rather than rendered output.
 - **`source/frontend` owns every pixel.** No presentation decision belongs in Go.
-- **CGO is allowed.** A desktop build needs it for the WebView binding; a server build does not.
+- **cgo is allowed.** A desktop build needs it for the WebView binding; a server build does not.
 - **A second Go module anywhere in the tree needs explicit approval. BAIL, FLAG, PAUSE.**
 - **Nothing carries a tag, so everything else is advisory.** Redesign a mechanic found structurally
   wrong, never freelance past it silently.

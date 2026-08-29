@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=sddviz
+Comment=A read-only viewer for SDD decision graphs
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/sddviz %u
+Terminal=false
+Type=Application
+Icon=sddviz
+Categories=Utility;
+StartupWMClass=sddviz
+
+ 

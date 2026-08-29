@@ -84,7 +84,7 @@ def check_links(corpus):
                     'Repoint the link, or restore the target.')
 
     for path, text in sorted(corpus.items()):
-        if not path.endswith('.md') or path.startswith(('.sdd/', '.claude/')):
+        if not path.endswith('.md') or path.startswith(('.sdd/', '.claude/', 'source/build/')):
             continue
 
         here = os.path.dirname(path)
@@ -115,7 +115,7 @@ def check_paths(corpus):
                     'Remove the pointer, or restore the target.')
 
     for path, text in sorted(corpus.items()):
-        if path.startswith(('.sdd/', '.claude/', 'scripts/lint/')):
+        if path.startswith(('.sdd/', '.claude/', 'scripts/lint/', 'source/build/')):
             continue
 
         seen = set()

@@ -1,3 +1,4 @@
+Darwin
 Devbox('s)?
 Else('s)?
 Frontmatter
@@ -14,12 +15,15 @@ Vite('s)?
 WebView
 Xcode('s)?
 backticked
+cgo
+darwin
 deliverables
 deserializer
 deserializers
 devbox('s)?
 dialogs
 direnv
+dyld
 else('s)?
 excludable
 fdbox('s)?
@@ -50,4 +54,5 @@ toolchains
 unbuilt
 unexported
 untracked
+vendored
 vite('s)?

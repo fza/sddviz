@@ -14,12 +14,16 @@ quick compile check, and `npm run lint` inside `source/frontend` is its front en
 `source/frontend/dist` and the module embeds them from there.
 
 - **No `/pkg`.** Every non-`main` package lives under `internal/`.
-- **CGO is allowed**, and a desktop build needs it for the WebView binding. A server build
+- **cgo is allowed**, and a desktop build needs it for the WebView binding. A server build
   (`go build -tags server`) does not.
-- **`source/icons/` is required to build a bundle.** Regenerate the set from `icons/app-icon.png`.
+- **`source/build/appicon.png` is the icon source.** `wails3 task common:generate:icons` derives the
+  platform icon sets from it.
 - **The generated bindings are committed.** `wails3 generate bindings` writes
-  `source/frontend/src/bindings`, and committing them lets the front end build without the Go
-  toolchain. Never edit one by hand.
+  `source/frontend/bindings`, and committing them lets the front end build without the Go toolchain.
+  Never edit one by hand.
+- **`source/build/` and `source/Taskfile.yml` are the framework's template**, vendored rather than
+  written here. The linters skip them. An edit to one carries a comment saying why, as the darwin
+  build and icon tasks do.
 
 ## Comments
 

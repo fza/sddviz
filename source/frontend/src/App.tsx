@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Service } from './bindings/github.com/fza/sddviz/internal/graph';
+import { Service } from '../bindings/github.com/fza/sddviz/internal/graph';
 
 export function App() {
 	const [backendVersion, setBackendVersion] = useState<string | null>(null);

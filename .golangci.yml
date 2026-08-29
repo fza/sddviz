@@ -167,6 +167,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      # Dependency installers the Wails template ships for platforms this
+      # project does not target. Vendored rather than written here, so the
+      # rules that bind our code do not bind them.
+      - build/(android|ios|linux|windows)
 
 severity:
   default: blocker
@@ -187,3 +191,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - build/(android|ios|linux|windows)

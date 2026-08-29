@@ -16,7 +16,9 @@ CLAUDE.local.md
 # Build output
 dist/
 node_modules/
+source/bin/
 source/frontend/dist/
+source/frontend/.bindings-tmp-*/
 
 # Coverage and test reports, produced locally as well as in CI
 coverage/

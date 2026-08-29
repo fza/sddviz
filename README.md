@@ -32,19 +32,33 @@ macOS, for now. Wails builds Linux and Windows from the same source, and neither
 The toolchain is pinned in `devbox.json` ([devbox](https://www.jetify.com/devbox) plus
 [direnv](https://direnv.net)). Entering the directory loads Go 1.26, Node.js 24 and the linters.
 `devbox run tools` installs the Wails CLI into the Go bin directory. Building the desktop
-application also needs the Xcode command line tools, since it links the system WebView through CGO.
+application also needs the Xcode command line tools, since it links the system WebView through cgo.
 
 ## Running
 
 ```bash
 devbox run dev            # the application, front end in watch mode
-devbox run build          # a bundled application
+devbox run build          # a signed `.app` bundle
 devbox run build:server   # the same application as an HTTP server
+devbox run sign           # sign the bundle for distribution
 devbox run test           # both halves
 devbox run lint           # both halves, prose, then the repository checks
 ```
 
 `devbox run bindings` regenerates the typed front end bindings after a service method changes.
+
+## Signing
+
+The bundle identifier is `com.fza.sddviz`, and every build carries the hardened runtime. The signing
+identity comes from `SDDVIZ_SIGN_IDENTITY`, which `devbox.json` sets to the development certificate
+on this machine.
+
+A development certificate produces a bundle that runs where it was built. Gatekeeper accepts a
+bundle elsewhere only under a `Developer ID Application` certificate that has also been notarized,
+which needs two things this repository cannot create: that certificate in the keychain, and
+notarization credentials stored with
+`xcrun notarytool store-credentials sddviz-notary`. With both in place,
+`devbox run sign:notarize` signs and submits.
 
 ## The web build
 
