@@ -44,7 +44,8 @@ frontmatter as structured data, and the same snapshot is handed to `application.
 search and views.
 
 Read-only is enforced there. The store's write methods, `Apply` and `Reconcile` in sdd's port,
-refuse, so no call path exists that could write to a reader's repository.
+refuse, so no call path exists that could write to a reader's repository. That also puts sdd's own
+graph-store conformance suite out of reach, since it asserts a mutation lands.
 
 Two properties of sdd's read surface bound what the viewer offers:
 
@@ -55,8 +56,22 @@ Two properties of sdd's read surface bound what the viewer offers:
   is a session binding validated against a live registered checkout, and sddviz checks nothing out,
   so browsing an arbitrary ref is not offered.
 
+## What the module reads today
+
+`source/internal/graph` carries the store. `Open` takes a project identity and a graph directory;
+`Current` walks it once, builds the documents sdd needs, and hands back the snapshot sdd builds from
+them. `Documents` returns those same documents, which is what the views will draw, and `Unreadable`
+names any document that would not decode, so one malformed file leaves the rest of a graph readable
+rather than shortening the list silently.
+
+`Apply` and `Reconcile` return `ErrReadOnly`. A document whose path is not an entry path is skipped
+before it reaches sdd, which rejects one it cannot turn into an entry ID.
+
+The tests run against a fixture of real entry documents. One drives sdd's own `View` and `Search`
+over the store, which is what shows the port is satisfied rather than merely compiled against.
+
 ## Documentation sets
 
-No implementation set exists yet. The application is a shell: `source/internal/graph` registers one
-service method, `BackendVersion`, and `source/frontend/src/App.tsx` calls it through its generated
-binding to show that the seam between the two halves works.
+No implementation set exists yet. The front end still shows one thing: `source/frontend/src/App.tsx`
+calls `BackendVersion` through its generated binding, which reports that the seam between the two
+halves works. Nothing yet renders a graph.

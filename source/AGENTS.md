@@ -123,8 +123,11 @@ the tests are run before the work is reported done.
 - **Name a test file inside the package under test `*_internal_test.go`. Every other is `*_test.go`,
   declaring the external `<pkg>_test` package.** `testpackage` in `.golangci.yml` enforces it, so
   reaching for unexported symbols is deliberate and the filename declares it.
-- **The `GraphStore` implementation runs `sddtest.RunGraphStoreTests`.** It is sdd's own conformance
-  suite and it is what proves the port is satisfied rather than merely compiled against.
+- **`sddtest.RunGraphStoreTests` does not apply to this store.** The suite calls `Apply` and asserts
+  the mutation landed, so a store whose write methods refuse fails its first write assertion. What
+  proves this store instead: a test that builds a snapshot from a fixture graph and drives sdd's own
+  `Search` and `View` over it, which exercises the same path the application uses, and a test that
+  every write method refuses.
 - **NEVER inline a fixture graph as a Go string literal.** Entry files, `config.yaml` and
   `meta.json` are real files under `testdata/`, loaded by a helper. A graph written as Go strings
   drifts from the format sdd actually writes, and it passes while the thing it stands for has

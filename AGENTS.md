@@ -86,8 +86,8 @@ snapshot; sdd answers everything derived from it.
   format for them. Where rendered output is consumed at all, consume the entry line and the ID lists
   rather than the prose around them, and isolate that in one package naming the sdd version it reads.
 - **Reach for sdd's ports before writing around them.** Package `application` documents the seams an
-  embedding host implements, `local` holds the reference adapters, and `sddtest` proves an
-  implementation conforms.
+  embedding host implements, and `local` holds the reference adapters. `sddtest`'s graph-store suite
+  requires a working `Apply`, so it does not apply to a read-only store.
 - **Schema knowledge is admitted, and it is bounded.** The store knows the entry format for a stated
   `graph_schema_version` and reports an unknown one rather than guessing.
 - **A view is cut before its data is invented.** Nothing is shown that neither the files nor the tool
