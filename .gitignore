@@ -1,0 +1,6 @@
+.sdd/tmp/
+.sdd/config.local.yaml
+.sdd/stats/
+.sdd/sessions/
+.sdd/staged-blobs/
+.sdd/graph/.sdd-runtime/
