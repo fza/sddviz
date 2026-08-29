@@ -14,7 +14,6 @@ CLAUDE.local.md
 .log/
 
 # Build output
-dist/
 node_modules/
 source/bin/
 source/frontend/dist/
