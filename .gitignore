@@ -12,6 +12,7 @@ CLAUDE.local.md
 # Derived state
 .index/
 .log/
+__pycache__/
 
 # Build output
 node_modules/
