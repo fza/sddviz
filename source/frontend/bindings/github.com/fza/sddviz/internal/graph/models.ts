@@ -4,6 +4,10 @@
 /**
  * Entry is one entry as the views draw it: what its frontmatter holds, plus the
  * status sdd derives.
+ * 
+ * Refs, Closes and Supersedes report what the file declares rather than what
+ * resolves against the rest of the graph, so a link naming an entry no file
+ * carries survives to the front end, which draws no line for it.
  */
 export interface Entry {
     "id": string;
@@ -16,7 +20,20 @@ export interface Entry {
     "topics": string[] | null;
     "summary": string;
     "body": string;
+    "refs": Ref[] | null;
+    "closes": string[] | null;
+    "supersedes": string[] | null;
     "status": Status;
+}
+
+/**
+ * Ref is one link an entry declares to another: the entry it names, how this
+ * entry relates to it, and the sentence written about the relation.
+ */
+export interface Ref {
+    "id": string;
+    "kind": string;
+    "desc"?: string;
 }
 
 /**
@@ -25,6 +42,7 @@ export interface Entry {
  * call, once there is a view to draw them in.
  */
 export interface Repository {
+    "name": string;
     "path": string;
     "graphDir": string;
     "repoId": string;

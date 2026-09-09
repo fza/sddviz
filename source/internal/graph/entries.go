@@ -13,8 +13,20 @@ import (
 // population, so closed and superseded entries appear beside live ones.
 const statusLayout = "source(graph):as-list"
 
+// Ref is one link an entry declares to another: the entry it names, how this
+// entry relates to it, and the sentence written about the relation.
+type Ref struct {
+	ID   string `json:"id"`
+	Kind string `json:"kind"`
+	Desc string `json:"desc,omitempty"`
+}
+
 // Entry is one entry as the views draw it: what its frontmatter holds, plus the
 // status sdd derives.
+//
+// Refs, Closes and Supersedes report what the file declares rather than what
+// resolves against the rest of the graph, so a link naming an entry no file
+// carries survives to the front end, which draws no line for it.
 type Entry struct {
 	ID           string   `json:"id"`
 	Type         string   `json:"type"`
@@ -26,6 +38,9 @@ type Entry struct {
 	Topics       []string `json:"topics"`
 	Summary      string   `json:"summary"`
 	Body         string   `json:"body"`
+	Refs         []Ref    `json:"refs"`
+	Closes       []string `json:"closes"`
+	Supersedes   []string `json:"supersedes"`
 	Status       Status   `json:"status"`
 }
 
@@ -86,6 +101,9 @@ func entryFromFrontmatter(id string, document sdd.EntryDocument) Entry {
 		Topics:       stringsField(document.Frontmatter, "topics"),
 		Summary:      stringField(document.Frontmatter, "summary"),
 		Body:         document.Body,
+		Refs:         refsField(document.Frontmatter, "refs"),
+		Closes:       stringsField(document.Frontmatter, "closes"),
+		Supersedes:   stringsField(document.Frontmatter, "supersedes"),
 	}
 }
 
@@ -95,6 +113,33 @@ func stringField(frontmatter map[string]any, name string) string {
 		return ""
 	}
 	return value
+}
+
+// refsField reads the links an entry declares. A malformed one, which is an
+// element that is not a mapping or that names no entry, is left out so the rest
+// of that entry's links survive it.
+func refsField(frontmatter map[string]any, name string) []Ref {
+	values, found := frontmatter[name].([]any)
+	if !found {
+		return []Ref{}
+	}
+	refs := make([]Ref, 0, len(values))
+	for _, value := range values {
+		fields, isMapping := value.(map[string]any)
+		if !isMapping {
+			continue
+		}
+		id := stringField(fields, "id")
+		if id == "" {
+			continue
+		}
+		refs = append(refs, Ref{
+			ID:   id,
+			Kind: stringField(fields, "kind"),
+			Desc: stringField(fields, "desc"),
+		})
+	}
+	return refs
 }
 
 func stringsField(frontmatter map[string]any, name string) []string {

@@ -23,6 +23,7 @@ var errNotARepository = errors.New("no .sdd/config.yaml, so this is not a reposi
 // carries counts rather than entries: the entries follow through their own
 // call, once there is a view to draw them in.
 type Repository struct {
+	Name            string `json:"name"`
 	Path            string `json:"path"`
 	GraphDir        string `json:"graphDir"`
 	RepoID          string `json:"repoId"`
@@ -54,6 +55,17 @@ func readRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
 		config.GraphDir = DefaultGraphDir
 	}
 	return config, nil
+}
+
+// repositoryName is what a reader calls the open project: the name of the
+// directory the graph lives in. A path is the front end's to display and never
+// to take apart, so the split happens here.
+func repositoryName(repositoryPath string) string {
+	name := filepath.Base(filepath.Clean(repositoryPath))
+	if name == "." || name == string(filepath.Separator) {
+		return repositoryPath
+	}
+	return name
 }
 
 // projectID identifies the opened graph to sdd. A repository declaring a

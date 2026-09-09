@@ -7,6 +7,8 @@ import (
 	"github.com/fza/sddviz/internal/graph"
 )
 
+const fixtureEntryCount = 9
+
 func TestOpenRepositoryReportsWhatTheGraphHolds(t *testing.T) {
 	service := graph.NewService("")
 
@@ -14,7 +16,7 @@ func TestOpenRepositoryReportsWhatTheGraphHolds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("OpenRepository: %v", err)
 	}
-	if opened.EntryCount != 2 {
+	if opened.EntryCount != fixtureEntryCount {
 		t.Errorf("the repository reports %d entries, expected the ones its graph carries", opened.EntryCount)
 	}
 	if opened.UnreadableCount != 0 {
@@ -87,7 +89,7 @@ func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Entries: %v", err)
 	}
-	if len(entries) != 2 {
+	if len(entries) != fixtureEntryCount {
 		t.Fatalf("the repository reported %d entries, expected the ones its graph carries", len(entries))
 	}
 
@@ -111,6 +113,73 @@ func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
 	}
 }
 
+func TestEntriesCarryTheLinksTheirFilesDeclare(t *testing.T) {
+	service := graph.NewService("")
+
+	_, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+
+	entries, err := service.Entries(t.Context())
+	if err != nil {
+		t.Fatalf("Entries: %v", err)
+	}
+
+	byID := map[string]graph.Entry{}
+	for _, entry := range entries {
+		byID[entry.ID] = entry
+	}
+
+	t.Run("a declared reference keeps its target, its kind and its description", func(t *testing.T) {
+		refs := byID["20260829-223328-d-tac-3qx"].Refs
+		expected := []graph.Ref{
+			{
+				ID:   "20260829-221103-d-tac-tz1",
+				Kind: "grounded-in",
+				Desc: "the view call this record's status arrives on",
+			},
+			{
+				ID:   "20260829-221000-d-cpt-d8y",
+				Kind: "refines",
+				Desc: "narrows the embedding's reading surface to the record shape the front end receives",
+			},
+		}
+		if len(refs) != len(expected) {
+			t.Fatalf("the entry carries %d references, expected the ones its file declares", len(refs))
+		}
+		for index, want := range expected {
+			if refs[index] != want {
+				t.Errorf("reference %d reads %+v, expected the one the file declares in that position", index, refs[index])
+			}
+		}
+	})
+
+	t.Run("a closing entry carries what it closes", func(t *testing.T) {
+		closes := byID["20260829-235605-d-prc-zbm"].Closes
+		if len(closes) != 1 || closes[0] != "20260829-221424-s-prc-8nm" {
+			t.Errorf("the entry closes %v, expected the signal its file names", closes)
+		}
+	})
+
+	t.Run("a superseding entry carries what it retires", func(t *testing.T) {
+		supersedes := byID["20260829-205243-d-tac-7o5"].Supersedes
+		if len(supersedes) != 1 || supersedes[0] != "20260829-202759-d-tac-8mk" {
+			t.Errorf("the entry supersedes %v, expected the decision its file names", supersedes)
+		}
+	})
+
+	t.Run("an entry declaring no link carries empty lists", func(t *testing.T) {
+		entry := byID["20260829-200722-s-prc-9o1"]
+		if entry.Refs == nil || entry.Closes == nil || entry.Supersedes == nil {
+			t.Error("an entry declaring no link reports a missing field rather than an empty list")
+		}
+		if len(entry.Refs) != 0 || len(entry.Closes) != 0 || len(entry.Supersedes) != 0 {
+			t.Errorf("an entry declaring no link reports links anyway: %+v", entry)
+		}
+	})
+}
+
 func TestEntriesRefusesWithoutAnOpenRepository(t *testing.T) {
 	service := graph.NewService("")
 
@@ -130,7 +199,7 @@ func TestStartupOpensThePathTheCommandLineNamed(t *testing.T) {
 	if state.Failure != "" {
 		t.Fatalf("opening the named repository failed: %s", state.Failure)
 	}
-	if state.Repository.EntryCount != 2 {
+	if state.Repository.EntryCount != fixtureEntryCount {
 		t.Errorf("the opened repository reports %d entries", state.Repository.EntryCount)
 	}
 
@@ -138,7 +207,7 @@ func TestStartupOpensThePathTheCommandLineNamed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Entries after startup: %v", err)
 	}
-	if len(entries) != 2 {
+	if len(entries) != fixtureEntryCount {
 		t.Errorf("the service reported %d entries after startup", len(entries))
 	}
 }
@@ -167,5 +236,31 @@ func TestStartupWithNoPathRequestsNothing(t *testing.T) {
 	}
 	if state.Failure != "" {
 		t.Errorf("no path was given, yet startup failed: %s", state.Failure)
+	}
+}
+
+func TestOpenRepositoryNamesTheDirectoryTheGraphLivesIn(t *testing.T) {
+	service := graph.NewService("")
+
+	cases := []struct {
+		name     string
+		path     string
+		expected string
+	}{
+		{name: "a plain path", path: "testdata/repository", expected: "repository"},
+		{name: "a path with a trailing separator", path: "testdata/repository/", expected: "repository"},
+		{name: "a path naming the directory another way", path: "testdata/./repository", expected: "repository"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			opened, err := service.OpenRepository(t.Context(), testCase.path)
+			if err != nil {
+				t.Fatalf("OpenRepository: %v", err)
+			}
+			if opened.Name != testCase.expected {
+				t.Errorf("the repository reports the name %q, expected the directory its graph lives in", opened.Name)
+			}
+		})
 	}
 }

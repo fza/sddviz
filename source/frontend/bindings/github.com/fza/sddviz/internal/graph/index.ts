@@ -8,6 +8,7 @@ export {
 
 export type {
     Entry,
+    Ref,
     Repository,
     StartupState,
     Status

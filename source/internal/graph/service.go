@@ -136,6 +136,7 @@ func (s *Service) OpenRepository(ctx context.Context, path string) (Repository, 
 	}
 
 	opened := Repository{
+		Name:            repositoryName(path),
 		Path:            path,
 		GraphDir:        config.GraphDir,
 		RepoID:          config.RepoID,
