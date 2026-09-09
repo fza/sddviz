@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -45,6 +46,7 @@ type Service struct {
 	application *sdd.Application
 	project     sdd.ProjectID
 	open        Repository
+	scratch     string
 	startup     StartupState
 	started     bool
 }
@@ -130,7 +132,7 @@ func (s *Service) OpenRepository(ctx context.Context, path string) (Repository, 
 		return Repository{}, err
 	}
 
-	mounted, err := mountApplication(store, projectID(config, path))
+	mounted, scratch, err := mountApplication(store, projectID(config, path), config, path)
 	if err != nil {
 		return Repository{}, err
 	}
@@ -146,13 +148,46 @@ func (s *Service) OpenRepository(ctx context.Context, path string) (Repository, 
 	}
 
 	s.mu.Lock()
+	previous := s.scratch
 	s.store = store
 	s.application = mounted
 	s.project = projectID(config, path)
 	s.open = opened
+	s.scratch = scratch
 	s.mu.Unlock()
 
+	discardScratch(previous)
+
 	return opened, nil
+}
+
+// CloseRepository lets go of the repository the viewer holds, so a reader can
+// leave one open graph without opening another. It reports nothing: closing
+// what is already closed is what a reader asked for either way.
+func (s *Service) CloseRepository() {
+	s.mu.Lock()
+	scratch := s.scratch
+	s.store = nil
+	s.application = nil
+	s.project = ""
+	s.open = Repository{}
+	s.scratch = ""
+	s.mu.Unlock()
+
+	discardScratch(scratch)
+}
+
+// discardScratch removes the session and staged-blob directories one mount
+// owned. They sit in the machine's temporary directory rather than in any
+// repository, so removing them reaches nothing a reader owns.
+func discardScratch(scratch string) {
+	if scratch == "" {
+		return
+	}
+	err := os.RemoveAll(scratch)
+	if err != nil {
+		slog.Warn("removing the session scratch directory", "path", scratch, "error", err)
+	}
 }
 
 // OpenedRepository reports the repository currently open, if any.
@@ -165,22 +200,27 @@ func (s *Service) OpenedRepository() Repository {
 // mountApplication runs sdd over the store, which is how a read reaches the
 // searching and the deriving sdd owns. Its session and staged-blob stores sit
 // in scratch the viewer owns: sdd requires both, and a read writes to neither.
-func mountApplication(store *Store, project sdd.ProjectID) (*sdd.Application, error) {
+//
+// A repository configuring an embedding provider the viewer speaks also gets
+// sdd's vector search, over the stored index sdd's own tool fills. That index
+// sits in the machine's cache directory rather than in the repository, so
+// reading and reconciling it leaves the repository untouched.
+func mountApplication(store *Store, project sdd.ProjectID, config repositoryConfig, repositoryPath string) (*sdd.Application, string, error) {
 	scratch, err := os.MkdirTemp("", "sddviz-session-")
 	if err != nil {
-		return nil, fmt.Errorf("preparing the session scratch directory: %w", err)
+		return nil, "", fmt.Errorf("preparing the session scratch directory: %w", err)
 	}
 
 	sessions, err := local.NewFilesystemSessionStore(filepath.Join(scratch, "sessions"))
 	if err != nil {
-		return nil, fmt.Errorf("preparing the session store: %w", err)
+		return nil, "", fmt.Errorf("preparing the session store: %w", err)
 	}
 	blobs, err := local.NewFilesystemStagedBlobStore(filepath.Join(scratch, "blobs"))
 	if err != nil {
-		return nil, fmt.Errorf("preparing the staged blob store: %w", err)
+		return nil, "", fmt.Errorf("preparing the staged blob store: %w", err)
 	}
 
-	runtime, err := sdd.NewProjectRuntime(sdd.ProjectRuntimeOptions{
+	options := sdd.ProjectRuntimeOptions{
 		Project:     sdd.ProjectRef{ID: project, DisplayName: string(project)},
 		Graph:       store,
 		Sessions:    sessions,
@@ -191,16 +231,56 @@ func mountApplication(store *Store, project sdd.ProjectID) (*sdd.Application, er
 				return sdd.LLMResult{}, errReadOnlyNeedsNoModel
 			},
 		},
-	})
+	}
+
+	embeddings, index, err := vectorSearchOptions(config, repositoryPath, project)
 	if err != nil {
-		return nil, fmt.Errorf("mounting sdd over %s: %w", project, err)
+		return nil, "", err
+	}
+	// sdd refuses a runtime carrying one without the other, and a repository
+	// configuring no provider searches over terms alone.
+	if embeddings != nil {
+		options.Embeddings = embeddings
+		options.SearchIndex = index
+	}
+
+	runtime, err := sdd.NewProjectRuntime(options)
+	if err != nil {
+		return nil, "", fmt.Errorf("mounting sdd over %s: %w", project, err)
 	}
 
 	mounted, err := sdd.NewApplication(readAccess{runtime: runtime})
 	if err != nil {
-		return nil, fmt.Errorf("mounting the sdd application: %w", err)
+		return nil, "", fmt.Errorf("mounting the sdd application: %w", err)
 	}
-	return mounted, nil
+	return mounted, scratch, nil
+}
+
+// vectorSearchOptions reports what sdd needs for vector search, or nothing at
+// all where the repository configures no provider the viewer speaks. A
+// configuration the viewer cannot use is not a failure: the search runs over
+// terms instead.
+func vectorSearchOptions(config repositoryConfig, repositoryPath string, project sdd.ProjectID) (sdd.EmbeddingExecutor, sdd.SearchIndexStore, error) {
+	executor, err := newEmbedder(config.Embedding)
+	if err != nil {
+		if errors.Is(err, errEmbeddingUnconfigured) {
+			return nil, nil, nil
+		}
+		return nil, nil, err
+	}
+
+	cacheRoot, err := indexCacheRoot()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	absolute, err := filepath.Abs(repositoryPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("resolving the path of %s: %w", repositoryPath, err)
+	}
+
+	index := local.NewPersistentSearchIndexStore(project, cacheRoot, indexRepoKey(config.RepoID, absolute))
+	return executor, index, nil
 }
 
 var errReadOnlyNeedsNoModel = errors.New("a read needs no model provider")

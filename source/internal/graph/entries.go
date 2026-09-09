@@ -42,6 +42,10 @@ type Entry struct {
 	Closes       []string `json:"closes"`
 	Supersedes   []string `json:"supersedes"`
 	Status       Status   `json:"status"`
+	// Score is how this entry ranks beside the others of one search, where the
+	// strongest renders 100. It is empty outside a search, and says nothing
+	// about how good a match is on its own.
+	Score int `json:"score,omitempty"`
 }
 
 // Entries reports every entry of the open repository, newest first. The order

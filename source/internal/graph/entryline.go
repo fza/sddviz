@@ -1,6 +1,9 @@
 package graph
 
-import "regexp"
+import (
+	"regexp"
+	"strconv"
+)
 
 // Status is an entry's derived lifecycle state. sdd computes it from the whole
 // graph and stores it nowhere, so it arrives on the line its view renders.
@@ -27,6 +30,48 @@ var entryLine = regexp.MustCompile(
 // statusField matches the status the line carries, with the live head that a
 // closing or superseding status names.
 var statusField = regexp.MustCompile(`\{status:\s*(?P<kind>[a-z-]+)(?:\s+(?P<by>[0-9a-z-]+))?\}`)
+
+// citationLine matches the line a search renders beneath each entry it ranked:
+//
+//	↳ 100%  ·  Summary  ·  <snippet>
+//
+// The percentage is each citation's score against the strongest in the same
+// result, so the first entry always renders 100% and the rest scale against it.
+// It says how one match ranks beside the others in one search, and nothing
+// about how good any of them is on its own. Measured against sdd 0.16.2.
+var citationLine = regexp.MustCompile(`^\s*↳\s+(?P<score>\d{1,3})%\s`)
+
+// parseSearchScores reads a rendered search into the relative score of every
+// entry it ranked. An entry carries a citation for each part of it that
+// matched, ordered strongest first, and the strongest is what stands for the
+// entry.
+func parseSearchScores(rendered string) map[string]int {
+	scores := map[string]int{}
+	current := ""
+	for _, line := range splitLines(rendered) {
+		id, _, isEntry := parseEntryLine(line)
+		if isEntry {
+			current = id
+			continue
+		}
+		if current == "" {
+			continue
+		}
+		match := citationLine.FindStringSubmatch(line)
+		if match == nil {
+			continue
+		}
+		if _, held := scores[current]; held {
+			continue
+		}
+		score, err := strconv.Atoi(match[citationLine.SubexpIndex("score")])
+		if err != nil {
+			continue
+		}
+		scores[current] = score
+	}
+	return scores
+}
 
 // parseEntryLine reads one rendered line. A line that carries no entry ID is
 // not one, which is how section headings and blank lines are passed over.

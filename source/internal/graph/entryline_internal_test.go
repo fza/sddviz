@@ -112,3 +112,47 @@ func TestParseEntryLinesOverRealOutput(t *testing.T) {
 		t.Errorf("a superseded entry parsed as %+v, expected the status and the entry replacing it", superseded)
 	}
 }
+
+func TestParseSearchScoresReadsARenderedSearch(t *testing.T) {
+	rendered, err := os.ReadFile("testdata/rendered/search.txt")
+	if err != nil {
+		t.Fatalf("reading the rendered search: %v", err)
+	}
+
+	scores := parseSearchScores(string(rendered))
+
+	if len(scores) == 0 {
+		t.Fatal("the rendered search yielded no score at all")
+	}
+	if scores["20260829-205243-d-tac-7o5"] != 100 {
+		t.Errorf("the strongest match scored %d, expected the hundred sdd normalises it to", scores["20260829-205243-d-tac-7o5"])
+	}
+	if scores["20260814-100000-s-prc-psr"] != 80 {
+		t.Errorf("a weaker match scored %d", scores["20260814-100000-s-prc-psr"])
+	}
+	for id, score := range scores {
+		if score < 0 || score > 100 {
+			t.Errorf("%s scored %d, which is outside the range a percentage takes", id, score)
+		}
+	}
+}
+
+func TestParseSearchScoresKeepsTheStrongestCitationOfAnEntry(t *testing.T) {
+	rendered := "  20260829-205243-d-tac-7o5 tactical directive decision (Felix) {status: settled} A summary\n" +
+		"    ↳ 100%  ·  Summary  ·  the strongest part\n" +
+		"    ↳  40%  ·  Body  ·  a weaker part\n"
+
+	scores := parseSearchScores(rendered)
+
+	if scores["20260829-205243-d-tac-7o5"] != 100 {
+		t.Errorf("the entry scored %d, expected its strongest citation", scores["20260829-205243-d-tac-7o5"])
+	}
+}
+
+func TestParseSearchScoresPassesOverWhatIsNotACitation(t *testing.T) {
+	rendered := "  (no matches)\n    ↳ 100%  ·  Summary  ·  a citation naming no entry\n"
+
+	if len(parseSearchScores(rendered)) != 0 {
+		t.Error("a citation with no entry above it was counted anyway")
+	}
+}

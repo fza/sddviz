@@ -17,6 +17,11 @@ const DefaultGraphDir = ".sdd/graph"
 // configPath is the file that makes a checkout a repository sddviz can open.
 const configPath = ".sdd/config.yaml"
 
+// localConfigPath carries what one machine adds to a repository's shared
+// configuration, an embedding endpoint and its key above all. It overlays the
+// shared file field by field and is absent from most checkouts.
+const localConfigPath = ".sdd/config.local.yaml"
+
 var errNotARepository = errors.New("no .sdd/config.yaml, so this is not a repository sddviz can open")
 
 // Repository is what the front end learns about an opened repository. It
@@ -33,8 +38,9 @@ type Repository struct {
 }
 
 type repositoryConfig struct {
-	GraphDir string `yaml:"graph_dir"`
-	RepoID   string `yaml:"repo_id"`
+	GraphDir  string          `yaml:"graph_dir"`
+	RepoID    string          `yaml:"repo_id"`
+	Embedding embeddingConfig `yaml:"embedding"`
 }
 
 func readRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
@@ -53,6 +59,35 @@ func readRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
 	}
 	if config.GraphDir == "" {
 		config.GraphDir = DefaultGraphDir
+	}
+
+	local, err := readLocalRepositoryConfig(repositoryPath)
+	if err != nil {
+		return repositoryConfig{}, err
+	}
+	config.Embedding = mergeEmbeddingConfig(config.Embedding, local.Embedding)
+	if local.GraphDir != "" {
+		config.GraphDir = local.GraphDir
+	}
+	if local.RepoID != "" {
+		config.RepoID = local.RepoID
+	}
+	return config, nil
+}
+
+func readLocalRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
+	raw, err := os.ReadFile(filepath.Join(repositoryPath, localConfigPath))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return repositoryConfig{}, nil
+		}
+		return repositoryConfig{}, fmt.Errorf("reading %s of %s: %w", localConfigPath, repositoryPath, err)
+	}
+
+	var config repositoryConfig
+	err = yaml.Unmarshal(raw, &config)
+	if err != nil {
+		return repositoryConfig{}, fmt.Errorf("reading %s of %s: %w", localConfigPath, repositoryPath, err)
 	}
 	return config, nil
 }

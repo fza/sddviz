@@ -24,6 +24,13 @@ export interface Entry {
     "closes": string[] | null;
     "supersedes": string[] | null;
     "status": Status;
+
+    /**
+     * Score is how this entry ranks beside the others of one search, where the
+     * strongest renders 100. It is empty outside a search, and says nothing
+     * about how good a match is on its own.
+     */
+    "score"?: number;
 }
 
 /**
@@ -49,6 +56,16 @@ export interface Repository {
     "revision": string;
     "entryCount": number;
     "unreadableCount": number;
+}
+
+/**
+ * SearchOutcome is what one search reports: the entries sdd matched, in the
+ * order it ranked them, and the mode that produced them.
+ */
+export interface SearchOutcome {
+    "query": string;
+    "mode": string;
+    "entries": Entry[] | null;
 }
 
 /**

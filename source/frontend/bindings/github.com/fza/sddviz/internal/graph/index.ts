@@ -10,6 +10,7 @@ export type {
     Entry,
     Ref,
     Repository,
+    SearchOutcome,
     StartupState,
     Status
 } from "./models.js";

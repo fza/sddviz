@@ -31,6 +31,15 @@ export function ChooseRepositoryDirectory(): $CancellablePromise<string> {
 }
 
 /**
+ * CloseRepository lets go of the repository the viewer holds, so a reader can
+ * leave one open graph without opening another. It reports nothing: closing
+ * what is already closed is what a reader asked for either way.
+ */
+export function CloseRepository(): $CancellablePromise<void> {
+    return $Call.ByID(2635941232);
+}
+
+/**
  * Entries reports every entry of the open repository, newest first. The order
  * is the one an entry ID already carries, since it opens with the moment the
  * entry was written.
@@ -52,6 +61,14 @@ export function OpenRepository(path: string): $CancellablePromise<$models.Reposi
  */
 export function OpenedRepository(): $CancellablePromise<$models.Repository> {
     return $Call.ByID(2284182977);
+}
+
+/**
+ * Search reports the entries sdd matches for what a reader typed. A phrase
+ * reaches sdd's own searching, never a comparison written here.
+ */
+export function Search(phrase: string): $CancellablePromise<$models.SearchOutcome> {
+    return $Call.ByID(3760010820, phrase);
 }
 
 /**

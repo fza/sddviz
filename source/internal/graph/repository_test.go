@@ -264,3 +264,160 @@ func TestOpenRepositoryNamesTheDirectoryTheGraphLivesIn(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchReportsWhatSddMatched(t *testing.T) {
+	service := graph.NewService("")
+
+	_, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+
+	outcome, err := service.Search(t.Context(), "frontmatter")
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(outcome.Entries) == 0 {
+		t.Fatal("the search found nothing, though the fixture's entries name frontmatter")
+	}
+	if outcome.Query != "frontmatter" {
+		t.Errorf("the outcome reports the phrase %q", outcome.Query)
+	}
+	for _, entry := range outcome.Entries {
+		if entry.ID == "" || entry.Summary == "" {
+			t.Errorf("a matched entry arrived without its fields: %+v", entry)
+		}
+	}
+}
+
+func TestSearchReportsTheModeItRan(t *testing.T) {
+	service := graph.NewService("")
+
+	_, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+
+	outcome, err := service.Search(t.Context(), "frontmatter")
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	// The mount carries no embeddings provider and no search index, so sdd
+	// offers terms alone.
+	if outcome.Mode != "text" {
+		t.Errorf("the search ran in mode %q, expected the one a mount without embeddings offers", outcome.Mode)
+	}
+}
+
+func TestSearchOnAnEmptyPhraseMatchesNothing(t *testing.T) {
+	service := graph.NewService("")
+
+	_, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+
+	outcome, err := service.Search(t.Context(), "   ")
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(outcome.Entries) != 0 {
+		t.Errorf("an empty phrase matched %d entries", len(outcome.Entries))
+	}
+}
+
+func TestSearchRefusesWithoutAnOpenRepository(t *testing.T) {
+	service := graph.NewService("")
+
+	_, err := service.Search(t.Context(), "frontmatter")
+	if err == nil {
+		t.Fatal("Search answered though no repository is open")
+	}
+}
+
+func TestSearchScoresRankMatchesAgainstTheStrongest(t *testing.T) {
+	service := graph.NewService("")
+
+	_, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+
+	outcome, err := service.Search(t.Context(), "frontmatter")
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(outcome.Entries) == 0 {
+		t.Fatal("the search found nothing to score")
+	}
+
+	if outcome.Entries[0].Score != 100 {
+		t.Errorf("the strongest match scored %d, expected the hundred sdd normalises it to", outcome.Entries[0].Score)
+	}
+	for _, entry := range outcome.Entries {
+		if entry.Score <= 0 || entry.Score > 100 {
+			t.Errorf("%s scored %d, which is outside the range a percentage takes", entry.ID, entry.Score)
+		}
+	}
+}
+
+func TestCloseRepositoryLetsGoOfWhatWasOpen(t *testing.T) {
+	service := graph.NewService("")
+
+	opened, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+	if opened.EntryCount == 0 {
+		t.Fatal("the repository opened with no entries to let go of")
+	}
+
+	service.CloseRepository()
+
+	if service.OpenedRepository() != (graph.Repository{}) {
+		t.Error("the service still reports a repository after letting go of it")
+	}
+	_, err = service.Entries(t.Context())
+	if err == nil {
+		t.Error("Entries answered after the repository was closed")
+	}
+	_, err = service.Search(t.Context(), "frontmatter")
+	if err == nil {
+		t.Error("Search answered after the repository was closed")
+	}
+}
+
+func TestCloseRepositoryOnNothingOpenIsNoFailure(t *testing.T) {
+	service := graph.NewService("")
+
+	service.CloseRepository()
+
+	if service.OpenedRepository() != (graph.Repository{}) {
+		t.Error("closing nothing left a repository behind")
+	}
+}
+
+func TestOpeningAgainAfterClosingWorks(t *testing.T) {
+	service := graph.NewService("")
+
+	_, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository: %v", err)
+	}
+	service.CloseRepository()
+
+	reopened, err := service.OpenRepository(t.Context(), "testdata/repository")
+	if err != nil {
+		t.Fatalf("OpenRepository after closing: %v", err)
+	}
+	if reopened.EntryCount != fixtureEntryCount {
+		t.Errorf("the reopened repository reports %d entries", reopened.EntryCount)
+	}
+	entries, err := service.Entries(t.Context())
+	if err != nil {
+		t.Fatalf("Entries after reopening: %v", err)
+	}
+	if len(entries) != fixtureEntryCount {
+		t.Errorf("the reopened repository listed %d entries", len(entries))
+	}
+}
