@@ -41,7 +41,9 @@ body {
 .app {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
-	grid-template-rows: 46px 38px minmax(0, 1fr);
+	/* The strip is absent until a repository opens, so its row takes no height
+	   until there is something to put in it. */
+	grid-template-rows: 52px auto minmax(0, 1fr);
 	height: 100vh;
 }
 
@@ -53,6 +55,21 @@ body {
    inside the bar rather than over a view. A native macOS window paints those
    controls over the page's top-left corner, and `reserves-controls` keeps that
    corner clear where they are there to clear. */
+/* Each part names its own row, so the view still lands in the last one when the
+   strip above it is absent. */
+.topbar {
+	grid-row: 1;
+}
+
+.tabs {
+	grid-row: 2;
+}
+
+main,
+.detail {
+	grid-row: 3;
+}
+
 .topbar,
 .tabs {
 	grid-column: 1 / -1;
@@ -60,19 +77,37 @@ body {
 	border-bottom: 1px solid var(--border);
 }
 
+/* The system draws its own controls over the top-left of the page, spanning 18
+   to 34 points down. The bar is twice that centre tall, so centring its
+   contents puts them on the same line as those controls. */
 .topbar {
 	display: flex;
 	align-items: center;
 	gap: 0.55rem;
 	padding: 0 1rem;
+	/* The bar is a window's own chrome: dragging it moves the window, and no
+	   text in it is there to be selected. */
+	cursor: default;
+	user-select: none;
 }
 
+/* The system's own controls end 80 points in, so the bar starts clear of them
+   with a little air rather than a lot. */
 .app.reserves-controls .topbar {
-	padding-left: 5.5rem;
+	padding-left: 5.75rem;
+}
+
+/* Centring a line of text by its box leaves it reading slightly high, since a
+   line reserves more room above its letters than below. Two points down sits it
+   on the line the controls beside it read from. */
+.topbar .repository,
+.topbar .revision {
+	position: relative;
+	top: 2px;
 }
 
 .topbar .repository {
-	font-size: 1.05rem;
+	font-size: 1rem;
 	font-weight: 600;
 }
 
@@ -179,23 +214,6 @@ main header h1 {
 	overflow: hidden;
 }
 
-.entries th {
-	position: sticky;
-	top: 0;
-	background: var(--background);
-	text-align: left;
-	font-weight: 500;
-	color: var(--muted);
-	padding: 0.4rem 0.6rem;
-	border-bottom: 1px solid var(--border);
-}
-
-.entries td {
-	padding: 0.4rem 0.6rem;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-	vertical-align: top;
-}
-
 .entries .identifier {
 	font-family: ui-monospace, SFMono-Regular, monospace;
 	font-size: 0.78rem;
@@ -281,6 +299,10 @@ main header h1 {
 }
 
 
+.entries th.sortable {
+	padding: 0;
+}
+
 .entries th.sortable button {
 	width: 100%;
 	height: 34px;
@@ -327,9 +349,7 @@ main header h1 {
 	background: rgba(10, 99, 210, 0.28);
 }
 
-.entries td.ordinal,
 .entries td.score,
-.entries th.col-ordinal,
 .entries th.col-score,
 .entries th.col-draw {
 	text-align: right;
@@ -337,9 +357,13 @@ main header h1 {
 	font-variant-numeric: tabular-nums;
 }
 
-.entries th.col-ordinal.sortable button,
 .entries th.col-score.sortable button {
 	text-align: right;
+}
+
+.entries td.ordinal {
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
 }
 
 .entries .captured {
@@ -476,12 +500,20 @@ main header h1 {
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	gap: 0.7rem;
 	min-width: 0;
-	overflow: auto;
-	padding: 1.25rem 1.1rem 1.5rem;
+	overflow: hidden;
 	background: var(--surface);
 	border-left: 1px solid var(--border);
+}
+
+.detail-scroll {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.7rem;
+	overflow: auto;
+	padding: 1.25rem 1.1rem 1.5rem;
 }
 
 .detail header {
@@ -955,22 +987,6 @@ main header h1 {
 
 
 
-.entries th.sortable button {
-	width: 100%;
-	padding: 0.4rem 0.6rem;
-	text-align: left;
-	font: inherit;
-	font-weight: 500;
-	color: var(--muted);
-	background: transparent;
-	border: none;
-}
-
-.entries th.sortable button:hover {
-	color: var(--text);
-	background: rgba(255, 255, 255, 0.05);
-}
-
 
 .entries th {
 	position: relative;
@@ -1000,11 +1016,6 @@ main header h1 {
 	);
 }
 
-/* The filler carries nothing and takes whatever the sized columns leave, so the
-   button column stays at the right edge at its own width. */
-.entries .filler {
-	padding: 0;
-}
 
 
 .topbar .eject,
@@ -1021,7 +1032,7 @@ main header h1 {
 	align-items: center;
 	justify-content: center;
 	width: 30px;
-	height: 26px;
+	height: 28px;
 	padding: 0;
 	color: var(--muted);
 }
@@ -1072,13 +1083,16 @@ main header h1 {
 
 /* The grip lies along the panel's own left edge, which is the border a reader
    pulls to widen it. */
+/* The panel scrolls, so a height of its visible box would leave the grip short
+   of the content below the fold. Anchoring top and bottom stretches it over the
+   whole scrolled height instead. */
 .detail .grip {
 	position: absolute;
 	top: 0;
+	bottom: 0;
 	left: -3px;
 	z-index: 3;
 	width: 7px;
-	height: 100%;
 	cursor: col-resize;
 	touch-action: none;
 }
@@ -1108,4 +1122,8 @@ main.bleed .searchbar {
 
 main.bleed .empty {
 	padding: 1.5rem;
+}
+
+.tabs {
+	height: 38px;
 }

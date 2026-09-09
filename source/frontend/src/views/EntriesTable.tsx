@@ -1,16 +1,10 @@
-import {
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useRef,
-	useState,
-} from "react";
-import type { Entry } from "../../bindings/github.com/fza/sddviz/internal/graph/models";
-import type { Widths } from "../graph/columns";
-import { resizeTo, tableFloor, widthOf } from "../graph/columns";
-import type { Sort, SortColumn } from "../graph/rows";
-import { splitIdentifier } from "../graph/rows";
-import { StatusBadge } from "./StatusBadge";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { Entry } from '../../bindings/github.com/fza/sddviz/internal/graph/models';
+import type { Widths } from '../graph/columns';
+import { resizeTo, tableFloor, widthOf } from '../graph/columns';
+import type { Sort, SortColumn } from '../graph/rows';
+import { splitIdentifier } from '../graph/rows';
+import { StatusBadge } from './StatusBadge';
 
 // rowHeight is what every row measures, in pixels. Windowing needs a height it
 // can multiply rather than measure, and `.entries tbody tr` holds rows to it.
@@ -21,11 +15,11 @@ const rowHeight = 34;
 const overscan = 12;
 
 type Column = {
-	key: SortColumn | "ordinal" | "score" | "summary" | "filler" | "draw";
+	key: SortColumn | 'ordinal' | 'score' | 'summary' | 'draw';
 	title: string;
-	// A column carrying a width holds it. The filler carries none and takes
-	// whatever the rest leave, which is what keeps the button column pinned to
-	// the right at its own size.
+	// A column carrying a width holds it. The summary carries none and takes
+	// whatever the rest leave, so the prose gets every pixel the others do not
+	// need and the button column keeps only the room its own control asks for.
 	sized: boolean;
 	// A grip on the column's edge is what a reader pulls to change its width.
 	resizable: boolean;
@@ -33,50 +27,43 @@ type Column = {
 };
 
 const baseColumns: Column[] = [
-	{ key: "ordinal", title: "#", sized: true, resizable: true, sortable: false },
+	{ key: 'ordinal', title: '#', sized: true, resizable: true, sortable: false },
 	{
-		key: "captured",
-		title: "Captured",
+		key: 'captured',
+		title: 'Captured',
 		sized: true,
 		resizable: true,
 		sortable: true,
 	},
 	{
-		key: "short",
-		title: "Entry",
+		key: 'short',
+		title: 'Entry',
 		sized: true,
 		resizable: true,
 		sortable: true,
 	},
 	{
-		key: "layer",
-		title: "Layer",
+		key: 'layer',
+		title: 'Layer',
 		sized: true,
 		resizable: true,
 		sortable: true,
 	},
-	{ key: "kind", title: "Kind", sized: true, resizable: true, sortable: true },
+	{ key: 'kind', title: 'Kind', sized: true, resizable: true, sortable: true },
 	{
-		key: "status",
-		title: "Status",
+		key: 'status',
+		title: 'Status',
 		sized: true,
 		resizable: true,
 		sortable: true,
 	},
-	{
-		key: "summary",
-		title: "Summary",
-		sized: true,
-		resizable: true,
-		sortable: false,
-	},
-	{ key: "filler", title: "", sized: false, resizable: false, sortable: false },
-	{ key: "draw", title: "", sized: true, resizable: false, sortable: false },
+	{ key: 'summary', title: 'Summary', sized: false, resizable: false, sortable: false },
+	{ key: 'draw', title: '', sized: true, resizable: false, sortable: false },
 ];
 
 const scoreColumn: Column = {
-	key: "score",
-	title: "Score",
+	key: 'score',
+	title: 'Score',
 	sized: true,
 	resizable: true,
 	sortable: true,
@@ -93,9 +80,9 @@ function columnsFor(showScore: boolean): Column[] {
 
 function marker(sort: Sort | null, column: Column): string {
 	if (sort === null || sort.column !== column.key) {
-		return "";
+		return '';
 	}
-	return sort.ascending ? " ▲" : " ▼";
+	return sort.ascending ? ' ▲' : ' ▼';
 }
 
 export function EntriesTable({
@@ -135,11 +122,7 @@ export function EntriesTable({
 	// A pull tracks the pointer it captured, so the width follows the pointer
 	// even where it leaves the heading it started on.
 	const startResize = useCallback(
-		(
-			event: React.PointerEvent<HTMLDivElement>,
-			column: string,
-			from: number,
-		) => {
+		(event: React.PointerEvent<HTMLDivElement>, column: string, from: number) => {
 			event.preventDefault();
 			event.stopPropagation();
 			const handle = event.currentTarget;
@@ -147,19 +130,17 @@ export function EntriesTable({
 			handle.setPointerCapture(event.pointerId);
 
 			const move = (moved: PointerEvent) => {
-				onWidthsRef.current(
-					resizeTo(widthsRef.current, column, from + moved.clientX - originX),
-				);
+				onWidthsRef.current(resizeTo(widthsRef.current, column, from + moved.clientX - originX));
 			};
 			const stop = () => {
 				handle.releasePointerCapture(event.pointerId);
-				handle.removeEventListener("pointermove", move);
-				handle.removeEventListener("pointerup", stop);
-				handle.removeEventListener("pointercancel", stop);
+				handle.removeEventListener('pointermove', move);
+				handle.removeEventListener('pointerup', stop);
+				handle.removeEventListener('pointercancel', stop);
 			};
-			handle.addEventListener("pointermove", move);
-			handle.addEventListener("pointerup", stop);
-			handle.addEventListener("pointercancel", stop);
+			handle.addEventListener('pointermove', move);
+			handle.addEventListener('pointerup', stop);
+			handle.addEventListener('pointercancel', stop);
 		},
 		[],
 	);
@@ -194,10 +175,7 @@ export function EntriesTable({
 			return;
 		}
 		const top = index * rowHeight;
-		if (
-			top < element.scrollTop ||
-			top + rowHeight > element.scrollTop + element.clientHeight
-		) {
+		if (top < element.scrollTop || top + rowHeight > element.scrollTop + element.clientHeight) {
 			element.scrollTop = Math.max(0, top - element.clientHeight / 2);
 		}
 	}, [selectedID, entries]);
@@ -230,11 +208,7 @@ export function EntriesTable({
 					{columns.map((column) => (
 						<col
 							key={column.key}
-							style={
-								column.sized
-									? { width: `${widthOf(widths, column.key)}px` }
-									: undefined
-							}
+							style={column.sized ? { width: `${widthOf(widths, column.key)}px` } : undefined}
 						/>
 					))}
 				</colgroup>
@@ -246,13 +220,10 @@ export function EntriesTable({
 								// The heading takes a prefixed class so a column named after
 								// something the page already styles, `status` above all, cannot
 								// pick that styling up and fall out of the table's layout.
-								className={`col-${column.key}${sortable && column.sortable ? " sortable" : ""}`}
+								className={`col-${column.key}${sortable && column.sortable ? ' sortable' : ''}`}
 							>
 								{sortable && column.sortable ? (
-									<button
-										type="button"
-										onClick={() => onSort(column.key as SortColumn)}
-									>
+									<button type="button" onClick={() => onSort(column.key as SortColumn)}>
 										{column.title}
 										{marker(sort ?? null, column)}
 									</button>
@@ -263,13 +234,9 @@ export function EntriesTable({
 									<div
 										className="grip"
 										role="separator"
-										aria-label={`Resize the ${column.title || "last"} column`}
+										aria-label={`Resize the ${column.title || 'last'} column`}
 										onPointerDown={(event) =>
-											startResize(
-												event,
-												column.key,
-												widthOf(widths, column.key),
-											)
+											startResize(event, column.key, widthOf(widths, column.key))
 										}
 									/>
 								)}
@@ -278,16 +245,14 @@ export function EntriesTable({
 					</tr>
 				</thead>
 				<tbody>
-					{above > 0 && (
-						<tr className="spacer" style={{ height: `${above}px` }} />
-					)}
+					{above > 0 && <tr className="spacer" style={{ height: `${above}px` }} />}
 					{drawn.map((entry, offset) => {
 						const split = splitIdentifier(entry.id);
 						return (
 							<tr
 								key={entry.id}
-								className={`${entry.type === "decision" ? "decision" : "signal"}${
-									entry.id === selectedID ? " selected" : ""
+								className={`${entry.type === 'decision' ? 'decision' : 'signal'}${
+									entry.id === selectedID ? ' selected' : ''
 								}`}
 								onClick={() => onSelect(entry.id)}
 							>
@@ -303,7 +268,6 @@ export function EntriesTable({
 								<td className="summary" title={entry.summary}>
 									{entry.summary}
 								</td>
-								<td className="filler" />
 								<td className="draw">
 									<button
 										type="button"
@@ -319,9 +283,7 @@ export function EntriesTable({
 							</tr>
 						);
 					})}
-					{below > 0 && (
-						<tr className="spacer" style={{ height: `${below}px` }} />
-					)}
+					{below > 0 && <tr className="spacer" style={{ height: `${below}px` }} />}
 				</tbody>
 			</table>
 		</div>

@@ -1,4 +1,6 @@
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Window } from '@wailsio/runtime';
 import { Service } from '../bindings/github.com/fza/sddviz/internal/graph';
 import type {
 	Entry,
@@ -69,6 +71,16 @@ export function App() {
 				setEntries((await Service.Entries()) ?? []);
 			})
 			.catch((cause: unknown) => setFailure(`${cause}`));
+	}, []);
+
+	// Double-clicking a window's title area zooms it, which is what the system
+	// does everywhere else. A page served to a browser has no window to zoom,
+	// and the call reporting that is the whole answer.
+	const zoomWindow = useCallback((event: ReactMouseEvent<HTMLElement>) => {
+		if ((event.target as HTMLElement).closest('button') !== null) {
+			return;
+		}
+		Window.ToggleMaximise().catch(() => undefined);
 	}, []);
 
 	const forget = useCallback(() => {
@@ -169,7 +181,7 @@ export function App() {
 					: { gridTemplateColumns: `minmax(0, 1fr) ${detailWidth}px` }
 			}
 		>
-			<header className="topbar">
+			<header className="topbar" onDoubleClick={zoomWindow}>
 				<span className="repository">{repository?.name ?? ''}</span>
 				{repository !== null && (
 					<span className="revision">{repository.revision.slice(0, 12)}</span>
@@ -192,10 +204,12 @@ export function App() {
 				)}
 			</header>
 
-			<nav className="tabs">
-				<div className="segmented" role="tablist">
-					{loaded ? (
-						views.map((candidate) => (
+			{/* Nothing is shown where nothing can be chosen: the strip arrives with
+			    its views the moment a graph opens. */}
+			{loaded && (
+				<nav className="tabs">
+					<div className="segmented" role="tablist">
+						{views.map((candidate) => (
 							<button
 								key={candidate.key}
 								type="button"
@@ -206,14 +220,10 @@ export function App() {
 							>
 								{candidate.title}
 							</button>
-						))
-					) : (
-						<button type="button" role="tab" aria-selected className="selected" disabled>
-							Load repository
-						</button>
-					)}
-				</div>
-			</nav>
+						))}
+					</div>
+				</nav>
+			)}
 
 			{/* The graph reads as the window's own surface, so it takes the whole
 			    area rather than sitting inside its padding. */}
