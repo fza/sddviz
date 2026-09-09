@@ -4,7 +4,8 @@
     "nodejs": "24",
     "go": "1.26",
     "go-task": "latest",
-    "golangci-lint": "latest"
+    "golangci-lint": "latest",
+    "apple-sdk_26": "26.5"
   },
   "shell": {
     "init_hook": [
@@ -13,9 +14,24 @@
       "./scripts/dev-setup.sh --check"
     ],
     "scripts": {
-      "dev": "cd source && wails3 task dev",
-      "build": "cd source && wails3 task package",
-      "exec": "cd source && wails3 task package && ./bin/sddviz.app/Contents/MacOS/sddviz \"$@\"",
+      "dev": [
+        "export SDKROOT=\"$PWD/.devbox/nix/profile/default/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk\"",
+        "export CGO_CFLAGS=\"-isysroot $SDKROOT -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET\"",
+        "export CGO_LDFLAGS=\"-isysroot $SDKROOT -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET\"",
+        "cd source && wails3 task dev"
+      ],
+      "build": [
+        "export SDKROOT=\"$PWD/.devbox/nix/profile/default/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk\"",
+        "export CGO_CFLAGS=\"-isysroot $SDKROOT -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET\"",
+        "export CGO_LDFLAGS=\"-isysroot $SDKROOT -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET\"",
+        "cd source && wails3 task package"
+      ],
+      "exec": [
+        "export SDKROOT=\"$PWD/.devbox/nix/profile/default/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk\"",
+        "export CGO_CFLAGS=\"-isysroot $SDKROOT -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET\"",
+        "export CGO_LDFLAGS=\"-isysroot $SDKROOT -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET\"",
+        "cd source && wails3 task package && ./bin/sddviz.app/Contents/MacOS/sddviz \"$@\""
+      ],
       "build:server": "cd source && wails3 task build:server",
       "bindings": "cd source && wails3 task common:generate:bindings",
       "frontend:install": "cd source/frontend && npm install",

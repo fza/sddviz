@@ -42,7 +42,12 @@ func main() {
 		URL:              "/",
 		Mac: application.MacWindow{
 			TitleBar:                application.MacTitleBarHiddenInset,
-			InvisibleTitleBarHeight: 50,
+			InvisibleTitleBarHeight: 52,
+			// Refusing the full-screen mode leaves the window's zoom control doing
+			// what it does on a window that cannot take one: growing to the
+			// screen it sits on and staying a window, rather than taking a space
+			// of its own. A reader keeps every other window beside this one.
+			CollectionBehavior: application.MacWindowCollectionBehaviorFullScreenNone,
 		},
 	})
 

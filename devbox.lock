@@ -1,6 +1,24 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "apple-sdk_26@26.5": {
+      "last_modified": "2026-08-27T07:16:00Z",
+      "resolved": "github:NixOS/nixpkgs/c27cdad491a991b11ed731760aa2ef8db0cb0410#apple-sdk_26",
+      "source": "devbox-search",
+      "version": "26.5",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/m0zvarrhmhg2bpvca617gx2rja31jg5a-apple-sdk-26.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/m0zvarrhmhg2bpvca617gx2rja31jg5a-apple-sdk-26.5"
+        }
+      }
+    },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "last_modified": "2026-08-19T03:50:13Z",
       "resolved": "github:NixOS/nixpkgs/afe3d8ac4395617bdcdac9f188ac8717a062e014?lastModified=1787111413"
