@@ -82,8 +82,10 @@ argument was absent. It is the only way in where no window system offers a direc
 Two further service methods open one on demand:
 
 - `OpenRepository(path)` reads that configuration, opens the store over the graph directory, and
-  reports the path, the graph directory, the repository identity, the revision, and how many entries
-  and undecodable documents it found. Every build answers it.
+  reports the name, the path, the graph directory, the repository identity, the revision, and how
+  many entries and undecodable documents it found. Every build answers it. The name is the directory
+  the graph lives in, split off here because a path is the front end's to display and never to take
+  apart.
 - `ChooseRepositoryDirectory()` opens the native folder picker and returns what the reader chose,
   without opening anything. Desktop builds alone answer it; elsewhere it reports that choosing a
   directory needs a window system, and the path arrives another way.
@@ -93,17 +95,42 @@ One declaring none is local, and its path is the only identity available.
 
 ## What the front end shows
 
-A sidebar names the two views and the main area draws the selected one. Opening a repository sits in
-the sidebar's footer, beside the path and the entry count of the one that is open.
+A bar across the top names the open repository and the revision its graph reads at. It keeps its
+top-left corner clear only where the window controls sit over it, which the front end settles once at
+startup from what the framework's runtime reports. Below it a sidebar
+names the two views and the main area draws the selected one. Opening a repository sits in the
+sidebar's footer, beside the path, the entry count and the link count of the one that is open. A
+panel on the right shows whichever entry is selected, and both views share that selection.
 
-- **Entries** is a table: identifier, layer, kind, derived status, summary. It carries no filters.
-- **Graph** draws one entry as a single node, through `3d-force-graph` over three.js.
+- **Entries** is a table: identifier, layer, kind, derived status, summary, and a control drawing
+  that entry in the graph. It scrolls in its own region, a row selects, and the selected row follows
+  a selection made elsewhere. It carries no filters.
+- **Graph** draws the whole graph through `3d-force-graph` over three.js. An entry is one shape,
+  coloured by type and greyed where the graph has retired it, sized by how many links reach it. A
+  link is one line, coloured by its kind and pointing at its target. Repulsion reaches a bounded
+  distance, so an entry group linking to nothing else stays beside the body it belongs to rather than
+  drifting past everything.
+- **The selection is drawn as a halo**: red on the selected entry, purple and smaller on what links
+  to it, purple and smaller again on what links to those. The camera flies to the selection, which a
+  view of the whole graph draws too small to find by eye. With nothing selected, the settled layout
+  is framed whole.
+- **The panel** carries the entry's type, layer, kind, intent and derived status, its summary, its
+  topics with the area marked, its participants and confidence, the links it declares and the links
+  that reach it, the identifiers it names that the graph does not hold, and its body. Every link is a
+  control selecting the entry at its other end.
 
 `Entries()` reports one record per entry, newest first, since an entry's identifier opens with the
-moment it was written. Each record carries the frontmatter fields and the derived status, with the
-live head named where an entry is closed or superseded. Status comes from one `View` call over
-`source(graph):as-list`, matched to entries by identifier, and the line it is read from is the one
-sdd's own unit tests hold.
+moment it was written. Each record carries the frontmatter fields, the links the file declares, and
+the derived status, with the live head named where an entry is closed or superseded. Status comes
+from one `View` call over `source(graph):as-list`, matched to entries by identifier, and the line it
+is read from is the one sdd's own unit tests hold.
+
+The front end builds the drawn network from those records. A link naming an entry the graph does not
+hold, and a link an entry declares to itself, are drawn nowhere and reported in the panel instead.
+
+An entry body is Markdown, hard wrapped by the tool that wrote it. A block of running prose is
+rejoined into one paragraph, and a block carrying a heading, a list, a quotation, a table or a fence
+keeps its lines as written.
 
 Opening a repository mounts sdd over the store. Its session and staged-blob stores sit in scratch the
 viewer owns, because sdd requires both and a read writes to neither.
