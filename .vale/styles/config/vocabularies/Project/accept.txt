@@ -27,6 +27,8 @@ dialogs
 direnv
 dyld
 else('s)?
+embedder
+embedders
 excludable
 fdbox('s)?
 frontmatter

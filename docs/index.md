@@ -81,7 +81,7 @@ argument was absent. It is the only way in where no window system offers a direc
 
 Two further service methods open one on demand:
 
-- `OpenRepository(path)` reads that configuration, opens the store over the graph directory, and
+- `OpenRepository(path)` reads that configuration and the local one beside it, opens the store over the graph directory, and
   reports the name, the path, the graph directory, the repository identity, the revision, and how
   many entries and undecodable documents it found. Every build answers it. The name is the directory
   the graph lives in, split off here because a path is the front end's to display and never to take
@@ -93,19 +93,106 @@ Two further service methods open one on demand:
 A repository declaring a `repo_id` is identified to sdd by it, so every clone shares one identity.
 One declaring none is local, and its path is the only identity available.
 
+`.sdd/config.local.yaml` overlays `.sdd/config.yaml` field by field, which is where a machine keeps
+the embedding endpoint and key that no checkout shares.
+
+## Searching a graph
+
+`Search(phrase)` reports the entries sdd matched, in the order sdd ranked them, alongside the mode
+that produced them. Comparing entries against a phrase happens in sdd, never here.
+
+The mode comes from sdd's own `Info`, which answers `vector,text` where the mount carries both an
+embedding provider and a stored index, and `text` alone otherwise. A phrase reaches sdd's vector
+search in the first and its term search in the second. A request names an explicit limit, since sdd
+answers with ten where none is named.
+
+**The word count decides the mode.** One word is what a reader types to find a token they already
+know, and matching it literally beats the nearest neighbours of its meaning, so a single word always
+searches over terms. Several words describe a thing rather than name it, which is what a vector space
+answers well, so they reach the vector search wherever one is available.
+
+**A score ranks one match against the strongest of the same search.** sdd renders it on the citation
+line beneath each entry it ranked, normalised so the top of every search reads 100. It orders matches
+within one search and says nothing about how good any of them is on its own. A request asks for one
+citation per entry, the strongest part of it that matched, because a request asking for none renders
+no citation line and no score with it.
+
+**Filtering by topic happens in the front end**, over the records already in hand. sdd's search
+filters by type, layer and kind, and carries no topic filter to reach for.
+
+**The topics on offer are those still worth choosing.** Each one listed is carried by an entry that
+survives the current choice, so choosing one never empties the table, and a topic leading nowhere is
+absent rather than shown and refused. A chosen topic stays listed so a reader can undo it.
+
+**Done signals are listed until asked away.** A control beside the search field drops the entries
+recording that work happened, which is what a reader following what is still open reads without. The
+topics on offer follow that choice like every other.
+
+**A search starts from what it found.** It clears the chosen topics and the sort, because a topic
+chosen against the whole graph rarely fits what a search returns, and a sort left in place would
+replace the ranking before a reader ever saw it.
+
+**The viewer speaks one embedding transport**, the `POST {endpoint}/v1/embeddings` contract that
+OpenAI and its compatible self-hosted services answer. A repository configuring `openai` with a
+model and a key gets vector search. One configuring any other provider searches over terms, which is
+an answer rather than a failure.
+
+**The stored index sits in the machine's cache, never in a repository.** It lives under
+`$XDG_CACHE_HOME/sdd` (or `~/.cache/sdd`), keyed by the repository identity and by a fingerprint of
+the embedder, which is the same layout sdd's own tool fills. Reproducing that fingerprint exactly is
+what lets the viewer read the index that tool already built rather than embedding every entry again
+to fill a second one, and a test holds the fingerprint to the string sdd derives.
+
+sdd reconciles the index before each vector search, embedding whatever is missing and writing it to
+that cache. An index already current is left alone. Read-only is untouched either way, because the
+cache is not the repository the viewer reads.
+
 ## What the front end shows
 
-A bar across the top names the open repository and the revision its graph reads at. It keeps its
-top-left corner clear only where the window controls sit over it, which the front end settles once at
-startup from what the framework's runtime reports. Below it a sidebar
-names the two views and the main area draws the selected one. Opening a repository sits in the
-sidebar's footer, beside the path, the entry count and the link count of the one that is open. A
-panel on the right shows whichever entry is selected, and both views share that selection.
+A bar across the top names the open repository and the revision its graph reads at, and carries the
+control letting go of it. It keeps its top-left corner clear only where the window controls sit over
+it, which the front end settles once at startup from what the framework's runtime reports. The bar
+names nothing while nothing is open.
 
-- **Entries** is a table: identifier, layer, kind, derived status, summary, and a control drawing
-  that entry in the graph. It scrolls in its own region, a row selects, and the selected row follows
-  a selection made elsewhere. It carries no filters.
-- **Graph** draws the whole graph through `3d-force-graph` over three.js. An entry is one shape,
+Below it a segmented control chooses the view, and the main area draws the chosen one. A repository
+opens through a control the main area centres, which is the only thing offered while nothing is open.
+Once a repository opens, Entries and Graph replace it, and Entries is where a reader lands, because a
+list of what a graph holds reads straight away. A panel on the right shows whichever entry is
+selected, and both views share that selection.
+
+- **Entries** is a table: a counter, the moment the graph received the entry, the rest of its
+  identifier, layer, kind, derived status, summary, and a control drawing that entry in the graph.
+  An identifier opens with that moment and closes with what the entry is, so the two sit in columns
+  of their own. Selecting a heading sorts, and selecting the sorted one again turns it around and then
+  clears it. Sorting is offered over every entry alone: a search answers in the order sdd ranked it,
+  and reordering that throws the ranking away. Every column sorts except the counter and the
+  summary, which is prose and orders by nothing a reader wants. A search adds a score column, dropped again when the
+  search clears.
+
+  A width fixes each column, and pulling the edge of a heading changes it. A column stops at the
+  width its own heading needs rather than closing to nothing, and the widths outlive a sort, a
+  search, and a switch between the views. A search leaves every one of them where it was and adds the
+  score beside them. Every column a reader reads carries a width, the summary among them, and the
+  control drawing an entry in the graph keeps its own size and its place at the right edge. An
+  unnamed column between them takes up whatever the rest leave. A floor under the table's width makes
+  a narrow view scroll sideways rather than crush the columns together. Rows are drawn only where the
+  reader is looking, a window either side of the visible ones standing in as plain height, which is
+  what answers a sort over a thousand entries inside a frame.
+
+  Pulling the panel's own left edge widens it, between the width its headings need and the width that
+  would crowd out the view beside it.
+
+  It scrolls in its own region, a row selects, and the selected row follows
+  a selection made elsewhere. A search field sits above it, and a search replaces what the table
+  lists with what sdd matched, in the order sdd ranked it. A turning ring beside the field says a
+  search is running, and a control on the field returns the table to every entry. A search outlives a
+  switch between the views. A control at the right of that row filters by topic: choosing several
+narrows to the entries carrying every one of them, and the areas sort ahead of the facets.
+The search field, the topic filter and the done control sit above both views and narrow what each
+draws, so the graph shows the entries a search and its filters left standing rather than always the
+whole graph. The graph takes the whole area under that row, to the window's own edges.
+
+- **Graph** draws what is listed, through `3d-force-graph` over three.js. An entry is one shape,
   coloured by type and greyed where the graph has retired it, sized by how many links reach it. A
   link is one line, coloured by its kind and pointing at its target. Repulsion reaches a bounded
   distance, so an entry group linking to nothing else stays beside the body it belongs to rather than
@@ -128,9 +215,10 @@ is read from is the one sdd's own unit tests hold.
 The front end builds the drawn network from those records. A link naming an entry the graph does not
 hold, and a link an entry declares to itself, are drawn nowhere and reported in the panel instead.
 
-An entry body is Markdown, hard wrapped by the tool that wrote it. A block of running prose is
-rejoined into one paragraph, and a block carrying a heading, a list, a quotation, a table or a fence
-keeps its lines as written.
+An entry body is Markdown, and the panel renders it: headings, lists, emphasis, code spans, fenced
+blocks, quotations, tables and links. The renderer builds elements rather than an HTML string, so
+markup written inside an entry is text a reader sees and never markup the page runs, and no sanitiser
+stands between the two. A link opens away from the viewer.
 
 Opening a repository mounts sdd over the store. Its session and staged-blob stores sit in scratch the
 viewer owns, because sdd requires both and a read writes to neither.

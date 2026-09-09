@@ -83,8 +83,14 @@ snapshot; sdd answers everything derived from it.
   derives eight states from the whole graph and stores none of them, so a local rule is a guess
   wearing an answer's clothes.
 - **Never parse a rendered entry.** sdd renders entries for a reader and carries no machine-readable
-  format for them. Where rendered output is consumed at all, consume the entry line and the ID lists
-  rather than the prose around them, and isolate that in one package naming the sdd version it reads.
+  format for them. Three things in that output may be consumed, and nothing else: the entry line, the
+  ID lists, and the score on a search's citation line. Never the prose around them, and never a
+  snippet, a breadcrumb or a summary lifted from a rendering. Isolate every one in the single package
+  naming the sdd version it reads.
+- **A consumed rendering states what its value means.** A citation score is each match's strength
+  against the strongest in the same result, so the top of every search renders 100. It ranks matches
+  within one search and says nothing about how good any of them is on its own. Anything reading it
+  says so where a reader can see it.
 - **Reach for sdd's ports before writing around them.** Package `application` documents the seams an
   embedding host implements, and `local` holds the reference adapters. `sddtest`'s graph-store suite
   requires a working `Apply`, so it does not apply to a read-only store.
