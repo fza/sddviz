@@ -1,5 +1,9 @@
 import type { Entry } from '../../bindings/github.com/fza/sddviz/internal/graph/models';
-import { bodyBlocks } from '../graph/body';
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { resizeDetail } from '../graph/columns';
 import type { EntryNetwork, GraphLink } from '../graph/network';
 import { linkColours } from '../palette';
 import { StatusBadge } from './StatusBadge';
@@ -52,17 +56,49 @@ export function EntryDetail({
 	summaries,
 	onSelect,
 	onClose,
+	width,
+	onWidth,
 }: {
 	entry: Entry;
 	network: EntryNetwork;
 	summaries: Map<string, string>;
 	onSelect: (id: string) => void;
 	onClose: () => void;
+	width: number;
+	onWidth: (width: number) => void;
 }) {
 	const unresolved = network.unresolved.get(entry.id) ?? [];
 
+	// The panel sits at the right edge, so pulling its grip leftwards widens it.
+	const startResize = useCallback(
+		(event: ReactPointerEvent<HTMLDivElement>) => {
+			event.preventDefault();
+			const originX = event.clientX;
+			const from = width;
+
+			// The window carries the listeners rather than the grip, so a pull
+			// that runs past the edge of the panel keeps being followed.
+			const move = (moved: PointerEvent) => onWidth(resizeDetail(from + originX - moved.clientX));
+			const stop = () => {
+				window.removeEventListener('pointermove', move);
+				window.removeEventListener('pointerup', stop);
+				window.removeEventListener('pointercancel', stop);
+			};
+			window.addEventListener('pointermove', move);
+			window.addEventListener('pointerup', stop);
+			window.addEventListener('pointercancel', stop);
+		},
+		[width, onWidth],
+	);
+
 	return (
 		<aside className="detail">
+			<div
+				className="grip"
+				role="separator"
+				aria-label="Resize the detail panel"
+				onPointerDown={startResize}
+			/>
 			<header>
 				<span className="identifier">{entry.id}</span>
 				<button type="button" className="close" onClick={onClose} aria-label="Close the detail panel">
@@ -134,11 +170,21 @@ export function EntryDetail({
 
 			<section className="body">
 				<h3>Body</h3>
-				{bodyBlocks(entry.body).map((block, index) => (
-					<p key={index} className={block.structured ? 'structured' : ''}>
-						{block.text}
-					</p>
-				))}
+				{/* The renderer builds elements rather than HTML, so markup written
+				    inside an entry is text a reader sees and never markup the page
+				    runs. A link opens where it points and nowhere else. */}
+				<Markdown
+					remarkPlugins={[remarkGfm]}
+					components={{
+						a: ({ href, children }) => (
+							<a href={href} target="_blank" rel="noreferrer noopener">
+								{children}
+							</a>
+						),
+					}}
+				>
+					{entry.body}
+				</Markdown>
 			</section>
 		</aside>
 	);

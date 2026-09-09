@@ -47,6 +47,11 @@ const settleMilliseconds = 12000;
 // works in.
 const focusDistance = 480;
 
+// zoomSpeed multiplies what one pinch or one wheel notch moves the camera. The
+// controls default to 1.2, which crosses the depth of a graph this size only
+// after many gestures.
+const zoomSpeed = 3.4;
+
 // Repulsion reaching across the whole drawing pushes an entry group that links
 // to nothing else out past every other, which leaves a fit to the whole graph
 // showing a speck. Capping its reach keeps those groups beside the body they
@@ -209,6 +214,11 @@ export function GraphView({
 
 		drawn.d3Force('charge')?.distanceMax(repulsionReach);
 
+		// The controls are the library's own, and the one number worth changing
+		// on them is how far a gesture travels.
+		const controls = drawn.controls() as { zoomSpeed?: number };
+		controls.zoomSpeed = zoomSpeed;
+
 		// The drawing follows its own container rather than the window, because
 		// opening and closing the detail panel resizes it while the window
 		// itself never changes.
@@ -242,7 +252,7 @@ export function GraphView({
 	useEffect(() => () => textures.forEach((texture) => texture.dispose()), [textures]);
 
 	if (entries.length === 0) {
-		return <p className="empty">Open a repository to draw its graph.</p>;
+		return <p className="empty">No entry matches what is asked for.</p>;
 	}
 
 	return (

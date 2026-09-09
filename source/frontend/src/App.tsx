@@ -1,27 +1,53 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Service } from '../bindings/github.com/fza/sddviz/internal/graph';
-import type { Entry, Repository } from '../bindings/github.com/fza/sddviz/internal/graph/models';
+import type {
+	Entry,
+	Repository,
+	SearchOutcome,
+} from '../bindings/github.com/fza/sddviz/internal/graph/models';
+import type { Widths } from './graph/columns';
+import { includingDone } from './graph/kinds';
+import { defaultDetailWidth } from './graph/columns';
 import { buildNetwork } from './graph/network';
-import { readPlatform, reservesWindowControls } from './platform';
+import type { Sort, SortColumn } from './graph/rows';
+import { nextSort, sortEntries } from './graph/rows';
+import { availableTopics, withTopics } from './graph/topics';
 import { EntriesTable } from './views/EntriesTable';
 import { EntryDetail } from './views/EntryDetail';
 import { GraphView } from './views/GraphView';
+import { readPlatform, reservesWindowControls } from './platform';
+import { SearchBar } from './views/SearchBar';
+import { TopicFilter } from './views/TopicFilter';
 
-type View = 'graph' | 'entries';
+type View = 'entries' | 'graph';
 
-const viewTitles: Record<View, string> = {
-	graph: 'Graph',
-	entries: 'Entries',
-};
+// Entries opens a repository, because a list of what a graph holds is what a
+// reader can read straight away.
+const views: { key: View; title: string }[] = [
+	{ key: 'entries', title: 'Entries' },
+	{ key: 'graph', title: 'Graph' },
+];
 
 export function App() {
-	const [view, setView] = useState<View>('graph');
+	const [view, setView] = useState<View>('entries');
 	const [repository, setRepository] = useState<Repository | null>(null);
 	const [entries, setEntries] = useState<Entry[]>([]);
 	const [selectedID, setSelectedID] = useState<string | null>(null);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [opening, setOpening] = useState(false);
 	const [reservesControls, setReservesControls] = useState(false);
+	// A search outlives a switch between the views, so it lives here rather than
+	// inside the table that draws its result.
+	const [outcome, setOutcome] = useState<SearchOutcome | null>(null);
+	const [searching, setSearching] = useState(false);
+	const [chosenTopics, setChosenTopics] = useState<string[]>([]);
+	// A done signal records that work happened, and a reader following what is
+	// still open reads the list without them. They are there until asked away.
+	const [includeDone, setIncludeDone] = useState(true);
+	const [sort, setSort] = useState<Sort | null>(null);
+	// Column widths outlive a switch between the views, as a search does.
+	const [widths, setWidths] = useState<Widths>({});
+	const [detailWidth, setDetailWidth] = useState(defaultDetailWidth);
 
 	useEffect(() => {
 		readPlatform().then((report) => setReservesControls(reservesWindowControls(report)));
@@ -45,6 +71,16 @@ export function App() {
 			.catch((cause: unknown) => setFailure(`${cause}`));
 	}, []);
 
+	const forget = useCallback(() => {
+		setRepository(null);
+		setEntries([]);
+		setSelectedID(null);
+		setOutcome(null);
+		setChosenTopics([]);
+		setSort(null);
+		setView('entries');
+	}, []);
+
 	const openRepository = useCallback(async () => {
 		setFailure(null);
 		setOpening(true);
@@ -53,13 +89,41 @@ export function App() {
 			if (path === '') {
 				return;
 			}
-			setSelectedID(null);
+			forget();
 			setRepository(await Service.OpenRepository(path));
 			setEntries((await Service.Entries()) ?? []);
 		} catch (cause: unknown) {
 			setFailure(`${cause}`);
 		} finally {
 			setOpening(false);
+		}
+	}, [forget]);
+
+	const eject = useCallback(async () => {
+		setFailure(null);
+		forget();
+		try {
+			await Service.CloseRepository();
+		} catch (cause: unknown) {
+			setFailure(`${cause}`);
+		}
+	}, [forget]);
+
+	const search = useCallback(async (phrase: string) => {
+		setFailure(null);
+		setSearching(true);
+		// A topic chosen against the whole graph rarely fits what a search
+		// returns, and one that fits nothing hides every match. A sort left in
+		// place would replace the ranking before a reader ever saw it. A search
+		// starts from every entry it found, in the order it ranked them.
+		setChosenTopics([]);
+		setSort(null);
+		try {
+			setOutcome(await Service.Search(phrase));
+		} catch (cause: unknown) {
+			setFailure(`${cause}`);
+		} finally {
+			setSearching(false);
 		}
 	}, []);
 
@@ -70,7 +134,18 @@ export function App() {
 		[entries],
 	);
 
+	const answered = outcome === null ? entries : (outcome.entries ?? []);
+	const matched = useMemo(() => includingDone(answered, includeDone), [answered, includeDone]);
+	const filtered = useMemo(() => withTopics(matched, chosenTopics), [matched, chosenTopics]);
+	// With nothing sorted the table keeps the order it was given: newest first
+	// over every entry, and sdd's ranking over a search.
+	const listed = useMemo(() => sortEntries(filtered, sort), [filtered, sort]);
+	// The topics on offer follow what is listed, so choosing one never leads to
+	// an empty table and a search offers only the topics its matches carry.
+	const topics = useMemo(() => availableTopics(matched, chosenTopics), [matched, chosenTopics]);
+
 	const selected = selectedID === null ? undefined : byID.get(selectedID);
+	const loaded = repository !== null;
 
 	const showInGraph = useCallback((id: string) => {
 		setSelectedID(id);
@@ -86,63 +161,107 @@ export function App() {
 	}
 
 	return (
-		<div className={shell.join(' ')}>
+		<div
+			className={shell.join(' ')}
+			style={
+				selected === undefined
+					? undefined
+					: { gridTemplateColumns: `minmax(0, 1fr) ${detailWidth}px` }
+			}
+		>
 			<header className="topbar">
-				<span className="repository">{repository?.name ?? 'No repository open'}</span>
-				{repository !== null && <span className="revision">{repository.revision.slice(0, 12)}</span>}
+				<span className="repository">{repository?.name ?? ''}</span>
+				{repository !== null && (
+					<span className="revision">{repository.revision.slice(0, 12)}</span>
+				)}
+				<div className="filler" />
+				{loaded && (
+					<button
+						type="button"
+						className="eject"
+						onClick={eject}
+						title="Eject this repository"
+						aria-label="Eject this repository"
+					>
+						{/* The system's own eject mark: a triangle over a bar. */}
+						<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+							<path d="M8 2.6 14.2 9.6H1.8z" fill="currentColor" />
+							<rect x="1.8" y="11.4" width="12.4" height="2" rx="0.7" fill="currentColor" />
+						</svg>
+					</button>
+				)}
 			</header>
 
-			<nav className="sidebar">
-				<p className="section">Repository</p>
-				<ul>
-					{(Object.keys(viewTitles) as View[]).map((candidate) => (
-						<li key={candidate}>
+			<nav className="tabs">
+				<div className="segmented" role="tablist">
+					{loaded ? (
+						views.map((candidate) => (
 							<button
+								key={candidate.key}
 								type="button"
-								className={candidate === view ? 'selected' : ''}
-								onClick={() => setView(candidate)}
+								role="tab"
+								aria-selected={candidate.key === view}
+								className={candidate.key === view ? 'selected' : ''}
+								onClick={() => setView(candidate.key)}
 							>
-								{viewTitles[candidate]}
+								{candidate.title}
 							</button>
-						</li>
-					))}
-				</ul>
-
-				<footer>
-					<button type="button" onClick={openRepository} disabled={opening}>
-						{opening ? 'Opening' : 'Open a repository'}
-					</button>
-					{repository !== null && (
-						<p className="opened">
-							<span className="path" title={repository.path}>
-								{repository.path}
-							</span>
-							<span className="count">
-								{repository.entryCount} entries, {network.links.length} links
-							</span>
-						</p>
+						))
+					) : (
+						<button type="button" role="tab" aria-selected className="selected" disabled>
+							Load repository
+						</button>
 					)}
-				</footer>
+				</div>
 			</nav>
 
-			<main>
-				<header>
-					<h1>{viewTitles[view]}</h1>
-				</header>
-
+			{/* The graph reads as the window's own surface, so it takes the whole
+			    area rather than sitting inside its padding. */}
+			<main className={loaded && view === 'graph' ? 'bleed' : ''}>
 				{failure !== null && <p className="failure">{failure}</p>}
 
-				{view === 'graph' && (
-					<GraphView entries={entries} selectedID={selectedID} onSelect={setSelectedID} />
+				{!loaded && (
+					<div className="welcome">
+						<button type="button" className="load" onClick={openRepository} disabled={opening}>
+							{opening ? 'Opening' : 'Load repository'}
+						</button>
+						<p>Open a checkout carrying an .sdd directory to read its graph.</p>
+					</div>
 				)}
-				{view === 'entries' && (
+
+				{loaded && (
+					<SearchBar
+						phrase={outcome?.query ?? ''}
+						searching={searching}
+						mode={outcome?.mode ?? ''}
+						matchCount={outcome === null ? null : listed.length}
+						onSearch={search}
+						onClear={() => setOutcome(null)}
+						includeDone={includeDone}
+						onIncludeDone={setIncludeDone}
+						filter={
+							<TopicFilter topics={topics} chosen={chosenTopics} onChange={setChosenTopics} />
+						}
+					/>
+				)}
+
+				{loaded && view === 'graph' && (
+					<GraphView entries={listed} selectedID={selectedID} onSelect={setSelectedID} />
+				)}
+				{loaded && view === 'entries' && (
 					<EntriesTable
-						entries={entries}
+						entries={listed}
 						selectedID={selectedID}
 						onSelect={setSelectedID}
 						onShowInGraph={showInGraph}
+						showScore={outcome !== null}
+						widths={widths}
+						onWidths={setWidths}
+						sort={sort}
+						onSort={(column: SortColumn) => setSort((held) => nextSort(held, column))}
 					/>
 				)}
+
 			</main>
 
 			{selected !== undefined && (
@@ -152,6 +271,8 @@ export function App() {
 					summaries={summaries}
 					onSelect={setSelectedID}
 					onClose={() => setSelectedID(null)}
+					width={detailWidth}
+					onWidth={setDetailWidth}
 				/>
 			)}
 		</div>
