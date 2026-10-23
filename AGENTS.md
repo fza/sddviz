@@ -66,8 +66,9 @@ points `core.hooksPath` at it on first entry into the directory.
   application are the whole vocabulary. Nothing that opens a session, starts a procedure, stages an
   attachment or captures an entry is ever called, and no call may write to the graph, the index, or
   a lock file.
-- **Read-only is a property of the type, not a convention.** The `GraphStore` implementation refuses
-  every write method, so no call path exists that could reach a reader's repository.
+- **Read-only is a property of the type, not a convention.** The `GraphStore` implementation carries
+  no write method, and the access resolver refuses every write and every session, so no call path
+  exists that could reach a reader's repository.
 
 ## What sddviz reads, and what sdd answers
 
@@ -91,9 +92,10 @@ snapshot; sdd answers everything derived from it.
   against the strongest in the same result, so the top of every search renders 100. It ranks matches
   within one search and says nothing about how good any of them is on its own. Anything reading it
   says so where a reader can see it.
-- **Reach for sdd's ports before writing around them.** Package `application` documents the seams an
-  embedding host implements, and `local` holds the reference adapters. `sddtest`'s graph-store suite
-  requires a working `Apply`, so it does not apply to a read-only store.
+- **Reach for sdd's ports before writing around them.** Package `pkg/application` documents the seams
+  an embedding host implements, and `pkg/local` holds the reference adapters. `sddtest`'s graph-store
+  suite requires a store that publishes, so it does not apply to a read-only store. Its embedder suite
+  does.
 - **Schema knowledge is admitted, and it is bounded.** The store knows the entry format for a stated
   `graph_schema_version` and reports an unknown one rather than guessing.
 - **A view is cut before its data is invented.** Nothing is shown that neither the files nor the tool
@@ -295,7 +297,8 @@ spell their words in full**, and **the separator is a hyphen, never a slash.**
 - **Read the area before touching its code.** `sdd view --layout "topic(area-<name>):as-list"` is the
   whole membership, ranked.
 
-**`sdd --version` before relying on any of this.** These rules measure 0.16.2.
+**`sdd --version` before relying on any of this.** These rules measure the sdd fork release
+`v0.18.0-alpha.2.fza.24`, the build `source/go.mod` embeds.
 
 ## Memory
 

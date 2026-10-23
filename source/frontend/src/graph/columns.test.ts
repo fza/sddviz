@@ -43,27 +43,27 @@ describe('resizeTo', () => {
 });
 
 describe('tableFloor', () => {
-	it('adds every column carrying a width to the room the summary keeps', () => {
-		const floor = tableFloor({}, ['ordinal', 'layer', 'summary']);
+	it('adds every column carrying a width to the room the name keeps', () => {
+		const floor = tableFloor({}, ['ordinal', 'layer', 'name']);
 
 		expect(floor).toBe(defaultWidths.ordinal + defaultWidths.layer + 260);
 	});
 
 	it('grows as a column is widened', () => {
-		const columns = ['ordinal', 'layer', 'summary'];
+		const columns = ['ordinal', 'layer', 'name'];
 
 		expect(tableFloor({ layer: 300 }, columns)).toBeGreaterThan(tableFloor({}, columns));
 	});
 
 	it('counts the score column only where it is shown', () => {
-		const without = tableFloor({}, ['ordinal', 'summary']);
-		const shown = tableFloor({}, ['ordinal', 'score', 'summary']);
+		const without = tableFloor({}, ['ordinal', 'name']);
+		const shown = tableFloor({}, ['ordinal', 'score', 'name']);
 
 		expect(shown - without).toBe(defaultWidths.score);
 	});
 
-	it('leaves the summary out of the sum, since it takes what is left', () => {
-		expect(tableFloor({ summary: 9999 }, ['ordinal', 'summary'])).toBe(
+	it('leaves the name out of the sum, since it takes what is left', () => {
+		expect(tableFloor({ name: 9999 }, ['ordinal', 'name'])).toBe(
 			defaultWidths.ordinal + 260,
 		);
 	});

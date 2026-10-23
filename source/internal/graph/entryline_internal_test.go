@@ -124,11 +124,11 @@ func TestParseSearchScoresReadsARenderedSearch(t *testing.T) {
 	if len(scores) == 0 {
 		t.Fatal("the rendered search yielded no score at all")
 	}
-	if scores["20260829-205243-d-tac-7o5"] != 100 {
-		t.Errorf("the strongest match scored %d, expected the hundred sdd normalises it to", scores["20260829-205243-d-tac-7o5"])
+	if scores["20260829-223328-d-tac-3qx"] != 100 {
+		t.Errorf("the strongest match scored %d, expected the hundred sdd normalises it to", scores["20260829-223328-d-tac-3qx"])
 	}
-	if scores["20260814-100000-s-prc-psr"] != 80 {
-		t.Errorf("a weaker match scored %d", scores["20260814-100000-s-prc-psr"])
+	if scores["20260814-100000-s-prc-psr"] != 75 {
+		t.Errorf("a weaker match whose citation names a section path scored %d", scores["20260814-100000-s-prc-psr"])
 	}
 	for id, score := range scores {
 		if score < 0 || score > 100 {

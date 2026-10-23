@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	sdd "github.com/networkteam/sdd/application"
+	sdd "github.com/networkteam/sdd/pkg/application"
 )
 
 // searchLimit caps what one search reports. sdd answers with ten where a
@@ -55,7 +55,7 @@ func (s *Service) Search(ctx context.Context, phrase string) (SearchOutcome, err
 	// One citation per entry is the strongest part of it that matched, and the
 	// score of that citation is what stands for the entry. Asking for none
 	// renders no citation line at all, and with it no score.
-	request := sdd.SearchRequest{Limit: searchLimit, MaxCitations: 1, IncludeSuperseded: true}
+	request := sdd.SearchRequest{Limit: searchLimit, MaxCitations: 1, IncludeSuperseded: true, SyncMode: sdd.SearchSyncLocal}
 	if mode == vectorMode {
 		request.Phrase = phrase
 	} else {

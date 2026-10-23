@@ -23,7 +23,7 @@ func main() {
 		Name:        "sddviz",
 		Description: "A read-only viewer for SDD decision graphs",
 		Services: []application.Service{
-			application.NewService(graph.NewService(flag.Arg(0))),
+			application.NewService(graph.NewService(flag.Arg(0), graph.UserConfigPath())),
 		},
 		Server: application.ServerOptions{Host: "localhost", Port: 8080},
 		Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets)},

@@ -10,7 +10,7 @@ import (
 const fixtureEntryCount = 9
 
 func TestOpenRepositoryReportsWhatTheGraphHolds(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	opened, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -38,7 +38,7 @@ func TestOpenRepositoryReportsWhatTheGraphHolds(t *testing.T) {
 }
 
 func TestOpenRepositoryDefaultsTheGraphDirectory(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	opened, err := service.OpenRepository(t.Context(), "testdata/defaulted")
 	if err != nil {
@@ -53,7 +53,7 @@ func TestOpenRepositoryDefaultsTheGraphDirectory(t *testing.T) {
 }
 
 func TestOpenRepositoryRefusesWhatIsNotARepository(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	cases := []struct {
 		name string
@@ -78,7 +78,7 @@ func TestOpenRepositoryRefusesWhatIsNotARepository(t *testing.T) {
 }
 
 func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -103,6 +103,9 @@ func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
 		if entry.Summary == "" {
 			t.Errorf("%s carries no summary", entry.ID)
 		}
+		if entry.Title == "" {
+			t.Errorf("%s carries no title, though its file declares one", entry.ID)
+		}
 		if entry.Status.Kind == "" {
 			t.Errorf("%s carries no derived status, which is what the view call exists to supply", entry.ID)
 		}
@@ -114,7 +117,7 @@ func TestEntriesCarryFrontmatterAndDerivedStatus(t *testing.T) {
 }
 
 func TestEntriesCarryTheLinksTheirFilesDeclare(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -181,7 +184,7 @@ func TestEntriesCarryTheLinksTheirFilesDeclare(t *testing.T) {
 }
 
 func TestEntriesRefusesWithoutAnOpenRepository(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.Entries(t.Context())
 	if err == nil {
@@ -190,7 +193,7 @@ func TestEntriesRefusesWithoutAnOpenRepository(t *testing.T) {
 }
 
 func TestStartupOpensThePathTheCommandLineNamed(t *testing.T) {
-	service := graph.NewService("testdata/repository")
+	service := graph.NewService("testdata/repository", "")
 
 	state := service.Startup(t.Context())
 	if !state.Requested {
@@ -213,7 +216,7 @@ func TestStartupOpensThePathTheCommandLineNamed(t *testing.T) {
 }
 
 func TestStartupReportsAPathThatWillNotOpen(t *testing.T) {
-	service := graph.NewService("testdata/notarepo")
+	service := graph.NewService("testdata/notarepo", "")
 
 	state := service.Startup(t.Context())
 	if !state.Requested {
@@ -228,7 +231,7 @@ func TestStartupReportsAPathThatWillNotOpen(t *testing.T) {
 }
 
 func TestStartupWithNoPathRequestsNothing(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	state := service.Startup(t.Context())
 	if state.Requested {
@@ -240,7 +243,7 @@ func TestStartupWithNoPathRequestsNothing(t *testing.T) {
 }
 
 func TestOpenRepositoryNamesTheDirectoryTheGraphLivesIn(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	cases := []struct {
 		name     string
@@ -266,7 +269,7 @@ func TestOpenRepositoryNamesTheDirectoryTheGraphLivesIn(t *testing.T) {
 }
 
 func TestSearchReportsWhatSddMatched(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -291,7 +294,7 @@ func TestSearchReportsWhatSddMatched(t *testing.T) {
 }
 
 func TestSearchReportsTheModeItRan(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -310,7 +313,7 @@ func TestSearchReportsTheModeItRan(t *testing.T) {
 }
 
 func TestSearchOnAnEmptyPhraseMatchesNothing(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -327,7 +330,7 @@ func TestSearchOnAnEmptyPhraseMatchesNothing(t *testing.T) {
 }
 
 func TestSearchRefusesWithoutAnOpenRepository(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.Search(t.Context(), "frontmatter")
 	if err == nil {
@@ -336,7 +339,7 @@ func TestSearchRefusesWithoutAnOpenRepository(t *testing.T) {
 }
 
 func TestSearchScoresRankMatchesAgainstTheStrongest(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -362,7 +365,7 @@ func TestSearchScoresRankMatchesAgainstTheStrongest(t *testing.T) {
 }
 
 func TestCloseRepositoryLetsGoOfWhatWasOpen(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	opened, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {
@@ -388,7 +391,7 @@ func TestCloseRepositoryLetsGoOfWhatWasOpen(t *testing.T) {
 }
 
 func TestCloseRepositoryOnNothingOpenIsNoFailure(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	service.CloseRepository()
 
@@ -398,7 +401,7 @@ func TestCloseRepositoryOnNothingOpenIsNoFailure(t *testing.T) {
 }
 
 func TestOpeningAgainAfterClosingWorks(t *testing.T) {
-	service := graph.NewService("")
+	service := graph.NewService("", "")
 
 	_, err := service.OpenRepository(t.Context(), "testdata/repository")
 	if err != nil {

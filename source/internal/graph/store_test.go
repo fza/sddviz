@@ -1,10 +1,7 @@
 package graph_test
 
 import (
-	"errors"
 	"testing"
-
-	sdd "github.com/networkteam/sdd/application"
 
 	"github.com/fza/sddviz/internal/graph"
 )
@@ -81,40 +78,6 @@ func TestAnUndecodableDocumentIsReportedAndTheRestLoad(t *testing.T) {
 	}
 	if unreadable[0].Message == "" {
 		t.Error("the report carries no reason, so a reader cannot act on it")
-	}
-}
-
-func TestEveryWriteRefuses(t *testing.T) {
-	store := openFixture(t)
-
-	cases := []struct {
-		name  string
-		write func() (sdd.ApplyResult, error)
-	}{
-		{
-			name: "Apply",
-			write: func() (sdd.ApplyResult, error) {
-				return store.Apply(t.Context(), "any-revision", sdd.MutationBatch{ID: "batch"}, nil)
-			},
-		},
-		{
-			name: "Reconcile",
-			write: func() (sdd.ApplyResult, error) {
-				return store.Reconcile(t.Context(), "batch", "digest")
-			},
-		},
-	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			result, err := testCase.write()
-			if !errors.Is(err, graph.ErrReadOnly) {
-				t.Errorf("the write returned %v, expected a refusal", err)
-			}
-			if result.State != sdd.MutationNotApplied {
-				t.Errorf("the write reported state %q, expected nothing to have been applied", result.State)
-			}
-		})
 	}
 }
 

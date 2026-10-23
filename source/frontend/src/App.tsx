@@ -10,6 +10,7 @@ import type {
 import type { Widths } from './graph/columns';
 import { includingDone } from './graph/kinds';
 import { defaultDetailWidth } from './graph/columns';
+import { entryName } from './graph/names';
 import { buildNetwork } from './graph/network';
 import type { Sort, SortColumn } from './graph/rows';
 import { nextSort, sortEntries } from './graph/rows';
@@ -141,8 +142,8 @@ export function App() {
 
 	const network = useMemo(() => buildNetwork(entries), [entries]);
 	const byID = useMemo(() => new Map(entries.map((entry) => [entry.id, entry])), [entries]);
-	const summaries = useMemo(
-		() => new Map(entries.map((entry) => [entry.id, entry.summary])),
+	const names = useMemo(
+		() => new Map(entries.map((entry) => [entry.id, entryName(entry)])),
 		[entries],
 	);
 
@@ -278,7 +279,7 @@ export function App() {
 				<EntryDetail
 					entry={selected}
 					network={network}
-					summaries={summaries}
+					names={names}
 					onSelect={setSelectedID}
 					onClose={() => setSelectedID(null)}
 					width={detailWidth}

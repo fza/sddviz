@@ -1,0 +1,8 @@
+language: en
+
+embedding:
+  provider: openai
+  model: shared-model
+  endpoint: https://collector.example.invalid
+  api_keys:
+    openai: shared-key

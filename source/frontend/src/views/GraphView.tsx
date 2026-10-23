@@ -4,6 +4,7 @@ import type { ForceGraph3DInstance, NodeObject } from '3d-force-graph';
 import type { Object3D } from 'three';
 import { CanvasTexture, Sprite, SpriteMaterial } from 'three';
 import type { Entry } from '../../bindings/github.com/fza/sddviz/internal/graph/models';
+import { entryName } from '../graph/names';
 import { buildNetwork, closesKind, neighbourhood, supersedesKind } from '../graph/network';
 import { linkColours, retiredStatuses, typeColours } from '../palette';
 
@@ -12,7 +13,7 @@ import { linkColours, retiredStatuses, typeColours } from '../palette';
 type EntryNode = NodeObject & {
 	id: string;
 	type: string;
-	summary: string;
+	name: string;
 	statusKind: string;
 	weight: number;
 };
@@ -159,7 +160,7 @@ export function GraphView({
 		const nodes: EntryNode[] = entries.map((entry) => ({
 			id: entry.id,
 			type: entry.type,
-			summary: entry.summary,
+			name: entryName(entry),
 			statusKind: entry.status.kind,
 			weight: 1 + Math.sqrt(network.degrees.get(entry.id) ?? 0) * 2,
 		}));
@@ -183,7 +184,7 @@ export function GraphView({
 		drawn
 			.backgroundColor('#12141a')
 			.showNavInfo(false)
-			.nodeLabel((node: EntryNode) => `<b>${escapeHTML(node.id)}</b><br>${escapeHTML(node.summary)}`)
+			.nodeLabel((node: EntryNode) => `<b>${escapeHTML(node.id)}</b><br>${escapeHTML(node.name)}`)
 			.nodeColor((node: EntryNode) => nodeColour(node, paint.current.selectedID))
 			.nodeVal((node: EntryNode) => node.weight)
 			.nodeResolution(8)

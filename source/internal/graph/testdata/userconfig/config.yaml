@@ -1,0 +1,11 @@
+participant: Felix
+
+embedding:
+  provider: openai
+  model: machine-model
+  endpoint: http://127.0.0.1:1234
+  api_keys:
+    openai: machine-key
+  timeout: 2m
+  query_template: "task: search result | query: {text}"
+  document_template: "title: none | text: {text}"

@@ -123,11 +123,12 @@ the tests are run before the work is reported done.
 - **Name a test file inside the package under test `*_internal_test.go`. Every other is `*_test.go`,
   declaring the external `<pkg>_test` package.** `testpackage` in `.golangci.yml` enforces it, so
   reaching for unexported symbols is deliberate and the filename declares it.
-- **`sddtest.RunGraphStoreTests` does not apply to this store.** The suite calls `Apply` and asserts
-  the mutation landed, so a store whose write methods refuse fails its first write assertion. What
-  proves this store instead: a test that builds a snapshot from a fixture graph and drives sdd's own
-  `Search` and `View` over it, which exercises the same path the application uses, and a test that
-  every write method refuses.
+- **`sddtest.RunGraphStoreTests` does not apply to this store.** The suite publishes an entry and
+  asserts it landed, so a store with no write method fails its first assertion. Three tests prove
+  this store instead. One builds a snapshot from a fixture graph and drives sdd's own `Search` and
+  `View` over it, the same path the application uses. One checks that the store implements no write
+  port. One checks that the access resolver refuses every write and every session.
+  `sddtest.RunEmbedderTests` does apply, and the embedder runs it.
 - **NEVER inline a fixture graph as a Go string literal.** Entry files, `config.yaml` and
   `meta.json` are real files under `testdata/`, loaded by a helper. A graph written as Go strings
   drifts from the format sdd actually writes, and it passes while the thing it stands for has
@@ -152,6 +153,6 @@ the tests are run before the work is reported done.
   what it costs.
 - **Nothing is added that reimplements what sdd already does.** Search across all three modes, the
   vector index, and linting are the tool's, reached through the embedded `application`.
-- **Reach for sdd's ports before writing around them.** Package `application` documents the seams an
-  embedding host implements, `local` holds the reference adapters, and `sddtest` proves an
+- **Reach for sdd's ports before writing around them.** Package `pkg/application` documents the seams
+  an embedding host implements, `pkg/local` holds the reference adapters, and `pkg/sddtest` proves an
   implementation conforms.

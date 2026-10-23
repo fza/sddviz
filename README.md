@@ -6,7 +6,7 @@ filterable entry browser with search and a 3D view of the graph itself.
 
 sddviz is **read-only**. It never captures, never decides, and never writes to the repository it
 reads. That is a property of the code rather than a promise: the graph reaches sdd through a store
-whose write methods refuse.
+that carries no write method, under an access resolver that refuses every write.
 
 sdd runs inside sddviz as a library, not as a tool it shells out to, so nothing has to be installed
 alongside it and the version it reads is pinned in `go.mod`.

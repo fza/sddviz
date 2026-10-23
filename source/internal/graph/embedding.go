@@ -14,7 +14,8 @@ import (
 	"strings"
 	"time"
 
-	sdd "github.com/networkteam/sdd/application"
+	"github.com/networkteam/sdd/pkg/llm"
+	"github.com/networkteam/sdd/pkg/llm/embed"
 )
 
 // openAIProvider is the only embedding transport the viewer speaks: the
@@ -37,7 +38,7 @@ var (
 
 // embeddingConfig carries the embedding settings a repository declares. sdd
 // keeps its own configuration types unexported, so the shape is declared here
-// and holds for the version named. Measured against sdd 0.16.2.
+// and holds for the version named. Measured against sdd v0.18.0-alpha.2.fza.24.
 type embeddingConfig struct {
 	Provider         string            `yaml:"provider"`
 	Model            string            `yaml:"model"`
@@ -84,8 +85,8 @@ func (c embeddingConfig) timeout() time.Duration {
 	return parsed
 }
 
-func (c embeddingConfig) template(purpose sdd.EmbeddingPurpose) string {
-	if purpose == sdd.EmbeddingQuery {
+func (c embeddingConfig) template(purpose embed.Purpose) string {
+	if purpose == embed.PurposeQuery {
 		return c.QueryTemplate
 	}
 	return c.DocumentTemplate
@@ -126,8 +127,8 @@ func mergeEmbeddingConfig(base, overlay embeddingConfig) embeddingConfig {
 	return merged
 }
 
-// embedder answers sdd's EmbeddingExecutor port over an OpenAI-compatible
-// service.
+// embedder answers sdd's `Embedder` port over an OpenAI-compatible service. sdd
+// keeps its own provider adapters internal and leaves one to each host.
 type embedder struct {
 	config embeddingConfig
 	client *http.Client
@@ -146,35 +147,34 @@ func newEmbedder(config embeddingConfig) (*embedder, error) {
 	return &embedder{config: config, client: &http.Client{Timeout: config.timeout()}}, nil
 }
 
-func (e *embedder) Spec(context.Context) (sdd.EmbeddingSpec, error) {
-	return sdd.EmbeddingSpec{Fingerprint: e.config.fingerprint()}, nil
+func (e *embedder) Fingerprint() string {
+	return e.config.fingerprint()
 }
 
-func (e *embedder) Embed(ctx context.Context, inputs []sdd.EmbeddingInput) ([]sdd.EmbeddingVector, error) {
-	if len(inputs) == 0 {
-		return nil, nil
+func (e *embedder) Embed(ctx context.Context, request embed.Request) (embed.Result, error) {
+	identity := llm.Identity{Provider: openAIProvider, Model: e.config.Model}
+	if len(request.Texts) == 0 {
+		return embed.Result{Identity: identity}, nil
 	}
 
-	vectors := make([]sdd.EmbeddingVector, 0, len(inputs))
+	template := e.config.template(request.Purpose)
+	vectors := make([][]float32, 0, len(request.Texts))
 	size := e.config.batchSize()
-	for start := 0; start < len(inputs); start += size {
-		end := min(start+size, len(inputs))
-		batch := inputs[start:end]
+	for start := 0; start < len(request.Texts); start += size {
+		end := min(start+size, len(request.Texts))
 
-		texts := make([]string, len(batch))
-		for index, input := range batch {
-			texts[index] = applyTemplate(e.config.template(input.Purpose), input.Text)
+		texts := make([]string, 0, end-start)
+		for _, text := range request.Texts[start:end] {
+			texts = append(texts, applyTemplate(template, text))
 		}
 
 		values, err := e.embedBatch(ctx, texts)
 		if err != nil {
-			return nil, fmt.Errorf("embedding inputs %d to %d: %w", start, end, err)
+			return embed.Result{}, fmt.Errorf("embedding inputs %d to %d: %w", start, end, err)
 		}
-		for index, input := range batch {
-			vectors = append(vectors, sdd.EmbeddingVector{ID: input.ID, Values: values[index]})
-		}
+		vectors = append(vectors, values...)
 	}
-	return vectors, nil
+	return embed.Result{Vectors: vectors, Identity: identity}, nil
 }
 
 type embedRequest struct {

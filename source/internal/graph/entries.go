@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	sdd "github.com/networkteam/sdd/application"
+	sdd "github.com/networkteam/sdd/pkg/application"
 )
 
 // statusLayout renders every entry in the graph on one line each, which is
@@ -36,6 +36,7 @@ type Entry struct {
 	Intent       string   `json:"intent,omitempty"`
 	Participants []string `json:"participants"`
 	Topics       []string `json:"topics"`
+	Title        string   `json:"title"`
 	Summary      string   `json:"summary"`
 	Body         string   `json:"body"`
 	Refs         []Ref    `json:"refs"`
@@ -103,6 +104,7 @@ func entryFromFrontmatter(id string, document sdd.EntryDocument) Entry {
 		Intent:       stringField(document.Frontmatter, "intent"),
 		Participants: stringsField(document.Frontmatter, "participants"),
 		Topics:       stringsField(document.Frontmatter, "topics"),
+		Title:        stringField(document.Frontmatter, "title"),
 		Summary:      stringField(document.Frontmatter, "summary"),
 		Body:         document.Body,
 		Refs:         refsField(document.Frontmatter, "refs"),

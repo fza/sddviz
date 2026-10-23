@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	sdd "github.com/networkteam/sdd/application"
-	local "github.com/networkteam/sdd/local"
+	sdd "github.com/networkteam/sdd/pkg/application"
+	"github.com/networkteam/sdd/pkg/llm"
+	"github.com/networkteam/sdd/pkg/llm/embed"
+	local "github.com/networkteam/sdd/pkg/local"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -39,7 +41,8 @@ type StartupState struct {
 
 // Service is the surface the front end calls.
 type Service struct {
-	startupPath string
+	startupPath    string
+	userConfigPath string
 
 	mu          sync.RWMutex
 	store       *Store
@@ -52,9 +55,10 @@ type Service struct {
 }
 
 // NewService takes the repository path the command line named, which is empty
-// where it named none.
-func NewService(startupPath string) *Service {
-	return &Service{startupPath: startupPath}
+// where it named none, and the path of sdd's machine-wide configuration, which
+// is empty where the service reads none.
+func NewService(startupPath, userConfigPath string) *Service {
+	return &Service{startupPath: startupPath, userConfigPath: userConfigPath}
 }
 
 // Startup opens the repository the command line named and reports what
@@ -117,7 +121,7 @@ func (s *Service) OpenRepository(ctx context.Context, path string) (Repository, 
 		return Repository{}, errNotARepository
 	}
 
-	config, err := readRepositoryConfig(path)
+	config, err := readRepositoryConfig(path, s.userConfigPath)
 	if err != nil {
 		return Repository{}, err
 	}
@@ -211,36 +215,33 @@ func mountApplication(store *Store, project sdd.ProjectID, config repositoryConf
 		return nil, "", fmt.Errorf("preparing the session scratch directory: %w", err)
 	}
 
-	sessions, err := local.NewFilesystemSessionStore(filepath.Join(scratch, "sessions"))
+	sessions, err := local.NewFilesystemSessionStoreAt(filepath.Join(scratch, "sessions"))
 	if err != nil {
 		return nil, "", fmt.Errorf("preparing the session store: %w", err)
 	}
-	blobs, err := local.NewFilesystemStagedBlobStore(filepath.Join(scratch, "blobs"))
+	blobs, err := local.NewFilesystemStagedBlobStoreAt(filepath.Join(scratch, "blobs"))
 	if err != nil {
 		return nil, "", fmt.Errorf("preparing the staged blob store: %w", err)
 	}
 
+	// The runtime names no default branch and no target acquirer, so sdd finds
+	// nowhere to send a write and refuses every one before it reaches a store.
 	options := sdd.ProjectRuntimeOptions{
-		Project:     sdd.ProjectRef{ID: project, DisplayName: string(project)},
-		Graph:       store,
-		Sessions:    sessions,
-		StagedBlobs: blobs,
-		LLM: sdd.LLMExecutorFuncs{
-			CapabilitiesFunc: func(context.Context) ([]string, error) { return nil, nil },
-			ExecuteFunc: func(context.Context, sdd.LLMRequest) (sdd.LLMResult, error) {
-				return sdd.LLMResult{}, errReadOnlyNeedsNoModel
-			},
-		},
+		Project: sdd.ProjectRef{ID: project, DisplayName: string(project)},
+		Graph:   store,
+		LLM: llm.RunnerFunc(func(context.Context, llm.Request) (llm.Result, error) {
+			return llm.Result{}, errReadOnlyNeedsNoModel
+		}),
 	}
 
-	embeddings, index, err := vectorSearchOptions(config, repositoryPath, project)
+	embedder, index, err := vectorSearchOptions(config, repositoryPath, project)
 	if err != nil {
 		return nil, "", err
 	}
 	// sdd refuses a runtime carrying one without the other, and a repository
 	// configuring no provider searches over terms alone.
-	if embeddings != nil {
-		options.Embeddings = embeddings
+	if embedder != nil {
+		options.Embedder = embedder
 		options.SearchIndex = index
 	}
 
@@ -249,7 +250,11 @@ func mountApplication(store *Store, project sdd.ProjectID, config repositoryConf
 		return nil, "", fmt.Errorf("mounting sdd over %s: %w", project, err)
 	}
 
-	mounted, err := sdd.NewApplication(readAccess{runtime: runtime})
+	mounted, err := sdd.NewApplication(sdd.ApplicationOptions{
+		Access:      readAccess{runtime: runtime},
+		Sessions:    sessions,
+		StagedBlobs: blobs,
+	})
 	if err != nil {
 		return nil, "", fmt.Errorf("mounting the sdd application: %w", err)
 	}
@@ -260,7 +265,7 @@ func mountApplication(store *Store, project sdd.ProjectID, config repositoryConf
 // all where the repository configures no provider the viewer speaks. A
 // configuration the viewer cannot use is not a failure: the search runs over
 // terms instead.
-func vectorSearchOptions(config repositoryConfig, repositoryPath string, project sdd.ProjectID) (sdd.EmbeddingExecutor, sdd.SearchIndexStore, error) {
+func vectorSearchOptions(config repositoryConfig, repositoryPath string, project sdd.ProjectID) (embed.Embedder, sdd.SearchIndexStore, error) {
 	executor, err := newEmbedder(config.Embedding)
 	if err != nil {
 		if errors.Is(err, errEmbeddingUnconfigured) {
@@ -286,13 +291,19 @@ func vectorSearchOptions(config repositoryConfig, repositoryPath string, project
 var errReadOnlyNeedsNoModel = errors.New("a read needs no model provider")
 
 // readAccess grants the one caller read of the one open repository. sddviz
-// serves the person at the machine, so there is no authorization to resolve.
+// serves the person at the machine, so there is no identity to check, and it
+// refuses every write and every session before sdd looks for a place to put
+// one.
 type readAccess struct {
 	runtime *sdd.ProjectRuntime
 }
 
 func (a readAccess) ResolvePrincipal(_ context.Context, identity sdd.RequestIdentity) (sdd.Principal, error) {
-	return sdd.Principal{Subject: identity.Subject, Participant: identity.Subject}, nil
+	return sdd.Principal{Subject: identity.Subject}, nil
+}
+
+func (a readAccess) ResolveParticipant(_ context.Context, principal sdd.Principal, _ sdd.ProjectID) (string, error) {
+	return principal.Subject, nil
 }
 
 func (a readAccess) ListProjects(context.Context, sdd.Principal) (sdd.ProjectList, error) {
@@ -301,7 +312,10 @@ func (a readAccess) ListProjects(context.Context, sdd.Principal) (sdd.ProjectLis
 	}}}, nil
 }
 
-func (a readAccess) ResolveProject(_ context.Context, _ sdd.Principal, project sdd.ProjectID, _ sdd.Access) (*sdd.ProjectRuntime, error) {
+func (a readAccess) ResolveProject(_ context.Context, _ sdd.Principal, project sdd.ProjectID, access sdd.Access) (*sdd.ProjectRuntime, error) {
+	if access != sdd.AccessRead {
+		return nil, &sdd.ApplicationError{Code: sdd.ErrorWriteDenied, Message: "sddviz reads a graph and never writes to it"}
+	}
 	if project != a.runtime.Project().ID {
 		return nil, &sdd.ApplicationError{Code: sdd.ErrorProjectUnavailable, Message: "unknown repository"}
 	}
@@ -310,4 +324,8 @@ func (a readAccess) ResolveProject(_ context.Context, _ sdd.Principal, project s
 
 func (a readAccess) ResolveDependency(context.Context, sdd.Principal, sdd.ProjectID, string) (*sdd.ProjectRuntime, error) {
 	return nil, &sdd.ApplicationError{Code: sdd.ErrorProjectUnavailable, Message: "connected repositories are not read"}
+}
+
+func (a readAccess) AuthorizeSession(context.Context, sdd.SessionAccessRequest) error {
+	return &sdd.ApplicationError{Code: sdd.ErrorWriteDenied, Message: "sddviz opens no session"}
 }

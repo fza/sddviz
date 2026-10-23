@@ -11,6 +11,7 @@ function entry(id: string, fields: Partial<Entry> = {}): Entry {
 		confidence: 'high',
 		participants: [],
 		topics: [],
+		title: '',
 		summary: '',
 		body: '',
 		refs: [],

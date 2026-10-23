@@ -22,7 +22,7 @@ type Status struct {
 //	<id> <layer> <kind> <type> [confidence: x] [intent: y] (participants) {status: s} <topics> summary
 //
 // The shape is documented and held by sdd's own unit tests, which is what makes
-// it firm enough to read. Measured against sdd 0.16.2.
+// it firm enough to read. Measured against sdd v0.18.0-alpha.2.fza.24.
 var entryLine = regexp.MustCompile(
 	`^\s*(?P<id>\d{8}-\d{6}-[a-z]-[a-z]{3}-[a-z0-9]+)\s` +
 		`(?P<rest>.*)$`)
@@ -33,12 +33,13 @@ var statusField = regexp.MustCompile(`\{status:\s*(?P<kind>[a-z-]+)(?:\s+(?P<by>
 
 // citationLine matches the line a search renders beneath each entry it ranked:
 //
-//	↳ 100%  ·  Summary  ·  <snippet>
+//	↳ 100%  ·  <section>  ·  <snippet>
 //
 // The percentage is each citation's score against the strongest in the same
 // result, so the first entry always renders 100% and the rest scale against it.
 // It says how one match ranks beside the others in one search, and nothing
-// about how good any of them is on its own. Measured against sdd 0.16.2.
+// about how good any of them is on its own. Measured against sdd
+// v0.18.0-alpha.2.fza.24.
 var citationLine = regexp.MustCompile(`^\s*↳\s+(?P<score>\d{1,3})%\s`)
 
 // parseSearchScores reads a rendered search into the relative score of every

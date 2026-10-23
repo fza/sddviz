@@ -6,7 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	sdd "github.com/networkteam/sdd/application"
+	"github.com/networkteam/sdd/pkg/llm/embed"
+	"github.com/networkteam/sdd/pkg/sddtest"
 )
 
 // The fingerprint decides which stored index a search reads. This holds it to
@@ -112,8 +113,10 @@ func TestIndexCacheRootFollowsTheCacheEnvironment(t *testing.T) {
 	}
 }
 
-func TestEmbedAppliesTheTemplateOfEachPurpose(t *testing.T) {
-	var seen []string
+// embeddingEndpoint answers the OpenAI embeddings contract with one short
+// vector per input, and records every text it received in seen.
+func embeddingEndpoint(t *testing.T, seen *[]string) *httptest.Server {
+	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/v1/embeddings" {
 			t.Errorf("the request reached %q", request.URL.Path)
@@ -125,9 +128,10 @@ func TestEmbedAppliesTheTemplateOfEachPurpose(t *testing.T) {
 		var decoded embedRequest
 		err := json.NewDecoder(request.Body).Decode(&decoded)
 		if err != nil {
-			t.Fatalf("decoding the request: %v", err)
+			t.Errorf("decoding the request: %v", err)
+			return
 		}
-		seen = append(seen, decoded.Input...)
+		*seen = append(*seen, decoded.Input...)
 
 		answer := embedResponse{}
 		for range decoded.Input {
@@ -138,10 +142,34 @@ func TestEmbedAppliesTheTemplateOfEachPurpose(t *testing.T) {
 		writer.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(writer).Encode(answer)
 		if err != nil {
-			t.Fatalf("answering: %v", err)
+			t.Errorf("answering: %v", err)
 		}
 	}))
-	defer server.Close()
+	t.Cleanup(server.Close)
+	return server
+}
+
+func TestEmbedderConformsToSddsPort(t *testing.T) {
+	sddtest.RunEmbedderTests(t, func(t *testing.T) sddtest.EmbedderFixture {
+		var seen []string
+		server := embeddingEndpoint(t, &seen)
+		built, err := newEmbedder(embeddingConfig{
+			Provider:  openAIProvider,
+			Model:     "a-model",
+			Endpoint:  server.URL,
+			APIKeys:   map[string]string{openAIProvider: "a-key"},
+			BatchSize: 2,
+		})
+		if err != nil {
+			t.Fatalf("newEmbedder: %v", err)
+		}
+		return sddtest.EmbedderFixture{Embedder: built, Texts: []string{"alpha", "beta", "gamma"}}
+	})
+}
+
+func TestEmbedAppliesTheTemplateOfEachPurpose(t *testing.T) {
+	var seen []string
+	server := embeddingEndpoint(t, &seen)
 
 	built, err := newEmbedder(embeddingConfig{
 		Provider:         openAIProvider,
@@ -156,15 +184,16 @@ func TestEmbedAppliesTheTemplateOfEachPurpose(t *testing.T) {
 		t.Fatalf("newEmbedder: %v", err)
 	}
 
-	vectors, err := built.Embed(t.Context(), []sdd.EmbeddingInput{
-		{ID: "one", Text: "alpha", Purpose: sdd.EmbeddingDocument},
-		{ID: "two", Text: "beta", Purpose: sdd.EmbeddingQuery},
-	})
+	documents, err := built.Embed(t.Context(), embed.Request{Purpose: embed.PurposeDocument, Texts: []string{"alpha", "gamma"}})
 	if err != nil {
-		t.Fatalf("Embed: %v", err)
+		t.Fatalf("Embed, documents: %v", err)
+	}
+	query, err := built.Embed(t.Context(), embed.Request{Purpose: embed.PurposeQuery, Texts: []string{"beta"}})
+	if err != nil {
+		t.Fatalf("Embed, query: %v", err)
 	}
 
-	expected := []string{"document: alpha", "query: beta"}
+	expected := []string{"document: alpha", "document: gamma", "query: beta"}
 	if len(seen) != len(expected) {
 		t.Fatalf("the endpoint received %d texts, expected one per input", len(seen))
 	}
@@ -174,8 +203,11 @@ func TestEmbedAppliesTheTemplateOfEachPurpose(t *testing.T) {
 		}
 	}
 
-	if len(vectors) != 2 || vectors[0].ID != "one" || vectors[1].ID != "two" {
-		t.Errorf("the vectors came back as %+v, expected one per input in order", vectors)
+	if len(documents.Vectors) != 2 || len(query.Vectors) != 1 {
+		t.Errorf("the calls returned %d and %d vectors, expected one per text across batches", len(documents.Vectors), len(query.Vectors))
+	}
+	if documents.Identity.Model != "a-model" || documents.Identity.Provider != openAIProvider {
+		t.Errorf("the result names %+v rather than what served the call", documents.Identity)
 	}
 }
 
@@ -199,7 +231,7 @@ func TestEmbedReportsWhatTheEndpointRefused(t *testing.T) {
 		t.Fatalf("newEmbedder: %v", err)
 	}
 
-	_, err = built.Embed(t.Context(), []sdd.EmbeddingInput{{ID: "one", Text: "alpha"}})
+	_, err = built.Embed(t.Context(), embed.Request{Purpose: embed.PurposeDocument, Texts: []string{"alpha"}})
 	if err == nil {
 		t.Fatal("a refused embedding request reported success")
 	}

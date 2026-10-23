@@ -18,6 +18,7 @@ export interface Entry {
     "intent"?: string;
     "participants": string[] | null;
     "topics": string[] | null;
+    "title": string;
     "summary": string;
     "body": string;
     "refs": Ref[] | null;

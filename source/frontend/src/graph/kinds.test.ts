@@ -11,6 +11,7 @@ function entry(id: string, kind: string): Entry {
 		confidence: 'high',
 		participants: [],
 		topics: [],
+		title: '',
 		summary: '',
 		body: '',
 		refs: [],

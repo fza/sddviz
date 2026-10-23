@@ -1,5 +1,5 @@
-// The widths a reader has not changed, in pixels, keyed by column. The summary
-// carries none: it takes whatever the rest leave, so the prose a reader is
+// The widths a reader has not changed, in pixels, keyed by column. The name
+// carries none: it takes whatever the rest leave, so the text a reader is
 // actually reading gets every pixel the others do not need.
 export const defaultWidths: Record<string, number> = {
 	ordinal: 56,
@@ -15,9 +15,9 @@ export const defaultWidths: Record<string, number> = {
 // A column narrower than this hides its own heading, so a pull stops here.
 export const minimumWidth = 44;
 
-// summaryFloor is the room the summary keeps at the table's narrowest, below
-// which the table scrolls sideways rather than squeezing the prose to nothing.
-const summaryFloor = 260;
+// nameFloor is the room the name keeps at the table's narrowest, below which
+// the table scrolls sideways rather than squeezing the text to nothing.
+const nameFloor = 260;
 
 export type Widths = Record<string, number>;
 
@@ -32,12 +32,12 @@ export function resizeTo(widths: Widths, column: string, width: number): Widths 
 }
 
 // tableFloor is the width below which the table scrolls sideways: every column
-// carrying a width, at the width it carries, plus the room the summary keeps.
+// carrying a width, at the width it carries, plus the room the name keeps.
 export function tableFloor(widths: Widths, columns: string[]): number {
 	const fixed = columns
-		.filter((column) => column !== 'summary')
+		.filter((column) => column !== 'name')
 		.reduce((total, column) => total + widthOf(widths, column), 0);
-	return fixed + summaryFloor;
+	return fixed + nameFloor;
 }
 
 

@@ -4,6 +4,7 @@ import type { Widths } from '../graph/columns';
 import { resizeTo, tableFloor, widthOf } from '../graph/columns';
 import type { Sort, SortColumn } from '../graph/rows';
 import { splitIdentifier } from '../graph/rows';
+import { entryName } from '../graph/names';
 import { StatusBadge } from './StatusBadge';
 
 // rowHeight is what every row measures, in pixels. Windowing needs a height it
@@ -15,9 +16,9 @@ const rowHeight = 34;
 const overscan = 12;
 
 type Column = {
-	key: SortColumn | 'ordinal' | 'score' | 'summary' | 'draw';
+	key: SortColumn | 'ordinal' | 'score' | 'name' | 'draw';
 	title: string;
-	// A column carrying a width holds it. The summary carries none and takes
+	// A column carrying a width holds it. The name carries none and takes
 	// whatever the rest leave, so the prose gets every pixel the others do not
 	// need and the button column keeps only the room its own control asks for.
 	sized: boolean;
@@ -57,7 +58,7 @@ const baseColumns: Column[] = [
 		resizable: true,
 		sortable: true,
 	},
-	{ key: 'summary', title: 'Summary', sized: false, resizable: false, sortable: false },
+	{ key: 'name', title: 'Title', sized: false, resizable: false, sortable: false },
 	{ key: 'draw', title: '', sized: true, resizable: false, sortable: false },
 ];
 
@@ -265,8 +266,8 @@ export function EntriesTable({
 								<td>
 									<StatusBadge kind={entry.status.kind} />
 								</td>
-								<td className="summary" title={entry.summary}>
-									{entry.summary}
+								<td className="name" title={entry.summary}>
+									{entryName(entry)}
 								</td>
 								<td className="draw">
 									<button

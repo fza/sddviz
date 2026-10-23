@@ -1,6 +1,10 @@
 package graph
 
-import "testing"
+import (
+	"testing"
+
+	sdd "github.com/networkteam/sdd/pkg/application"
+)
 
 func TestRefsFieldSkipsWhatItCannotRead(t *testing.T) {
 	cases := []struct {
@@ -58,5 +62,18 @@ func TestRefsFieldSkipsWhatItCannotRead(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAnEntryWithoutATitleCarriesAnEmptyOne(t *testing.T) {
+	entry := entryFromFrontmatter("20260829-221000-d-cpt-d8y", sdd.EntryDocument{
+		Frontmatter: map[string]any{"type": "decision", "summary": "A summary standing alone"},
+	})
+
+	if entry.Title != "" {
+		t.Errorf("an entry whose file declares no title reports %q", entry.Title)
+	}
+	if entry.Summary == "" {
+		t.Error("the summary the front end falls back to went missing")
 	}
 }

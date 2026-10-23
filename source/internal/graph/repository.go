@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	sdd "github.com/networkteam/sdd/application"
+	sdd "github.com/networkteam/sdd/pkg/application"
 	"gopkg.in/yaml.v3"
 )
 
@@ -21,6 +21,12 @@ const configPath = ".sdd/config.yaml"
 // configuration, an embedding endpoint and its key above all. It overlays the
 // shared file field by field and is absent from most checkouts.
 const localConfigPath = ".sdd/config.local.yaml"
+
+// userConfigFile is sdd's machine-wide configuration, relative to the
+// configuration directory. sdd reads it beneath both repository files, and it
+// is where a machine keeps the embedding settings every repository shares.
+// Measured against sdd v0.18.0-alpha.2.fza.24.
+const userConfigFile = "sdd/config.yaml"
 
 var errNotARepository = errors.New("no .sdd/config.yaml, so this is not a repository sddviz can open")
 
@@ -43,7 +49,27 @@ type repositoryConfig struct {
 	Embedding embeddingConfig `yaml:"embedding"`
 }
 
-func readRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
+// UserConfigPath is where sdd keeps its machine-wide configuration:
+// `$XDG_CONFIG_HOME/sdd/config.yaml`, or `~/.config/sdd/config.yaml` where the
+// variable is unset. It is empty where no home directory resolves, and a
+// repository then reads its own files alone.
+func UserConfigPath() string {
+	base := os.Getenv("XDG_CONFIG_HOME")
+	if base == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		base = filepath.Join(home, ".config")
+	}
+	return filepath.Join(base, userConfigFile)
+}
+
+// readRepositoryConfig resolves a repository's configuration in the order sdd
+// reads it: the machine-wide file first, then the shared file, then the local
+// one, each overlaying the one beneath it field by field. The shared file
+// alone never sets an embedding endpoint or key.
+func readRepositoryConfig(repositoryPath, userConfigPath string) (repositoryConfig, error) {
 	raw, err := os.ReadFile(filepath.Join(repositoryPath, configPath))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -61,11 +87,22 @@ func readRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
 		config.GraphDir = DefaultGraphDir
 	}
 
-	local, err := readLocalRepositoryConfig(repositoryPath)
+	user, err := readOptionalConfig(userConfigPath)
 	if err != nil {
 		return repositoryConfig{}, err
 	}
-	config.Embedding = mergeEmbeddingConfig(config.Embedding, local.Embedding)
+	local, err := readOptionalConfig(filepath.Join(repositoryPath, localConfigPath))
+	if err != nil {
+		return repositoryConfig{}, err
+	}
+	// The shared file arrives with whatever a repository's committers wrote, so
+	// it may not choose where a request goes or which key it carries. A key
+	// from either machine-owned file would otherwise travel to an endpoint a
+	// stranger named the moment a reader opened their repository.
+	shared := config.Embedding
+	shared.Endpoint = ""
+	shared.APIKeys = nil
+	config.Embedding = mergeEmbeddingConfig(mergeEmbeddingConfig(user.Embedding, shared), local.Embedding)
 	if local.GraphDir != "" {
 		config.GraphDir = local.GraphDir
 	}
@@ -75,19 +112,25 @@ func readRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
 	return config, nil
 }
 
-func readLocalRepositoryConfig(repositoryPath string) (repositoryConfig, error) {
-	raw, err := os.ReadFile(filepath.Join(repositoryPath, localConfigPath))
+// readOptionalConfig reads a configuration file that may be absent, which is
+// no failure: a machine without one, or a checkout without a local file, reads
+// what the other layers say.
+func readOptionalConfig(path string) (repositoryConfig, error) {
+	if path == "" {
+		return repositoryConfig{}, nil
+	}
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return repositoryConfig{}, nil
 		}
-		return repositoryConfig{}, fmt.Errorf("reading %s of %s: %w", localConfigPath, repositoryPath, err)
+		return repositoryConfig{}, fmt.Errorf("reading %s: %w", path, err)
 	}
 
 	var config repositoryConfig
 	err = yaml.Unmarshal(raw, &config)
 	if err != nil {
-		return repositoryConfig{}, fmt.Errorf("reading %s of %s: %w", localConfigPath, repositoryPath, err)
+		return repositoryConfig{}, fmt.Errorf("reading %s: %w", path, err)
 	}
 	return config, nil
 }

@@ -1,0 +1,4 @@
+participant: Felix
+
+embedding:
+  model: repository-model

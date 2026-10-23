@@ -37,15 +37,20 @@ than at launch.
 
 ## Reading a graph
 
-sdd is embedded as a library. The module implements sdd's `GraphStore` port, which package
-`application` documents as an infrastructure port for an embedding host: one walk of
+sdd is embedded as a library. The module embeds the sdd fork at `github.com/fza/sdd`, release
+`v0.18.0-alpha.2.fza.24`, through a `replace` in `source/go.mod`. That build writes the title that
+names each entry. The module implements sdd's `GraphStore` port, which package
+`pkg/application` documents as an infrastructure port for an embedding host: one walk of
 `.sdd/graph/**/*.md` builds an `application.SnapshotData`, whose `EntryDocument` values carry the
 frontmatter as structured data, and the same snapshot is handed to `application.Application` for
 search and views.
 
-Read-only is enforced there. The store's write methods, `Apply` and `Reconcile` in sdd's port,
-refuse, so no call path exists that could write to a reader's repository. That also puts sdd's own
-graph-store conformance suite out of reach, since it asserts a mutation lands.
+Read-only is enforced there. sdd's `GraphStore` port holds `Current` and `ReadAttachmentPage` alone,
+and a write travels through a separate mutation port the store does not implement. The runtime names
+no default branch and no target acquirer. The access resolver refuses write access and every
+session. No call path exists that could write to a reader's repository. sdd's own graph-store
+conformance suite asserts a mutation lands, so it does not apply here. Its embedder suite does, and
+the viewer's embedder runs it.
 
 Two properties of sdd's read surface bound what the viewer offers:
 
@@ -64,8 +69,8 @@ them. `Documents` returns those same documents, which is what the views will dra
 names any document that would not decode, so one malformed file leaves the rest of a graph readable
 rather than shortening the list silently.
 
-`Apply` and `Reconcile` return `ErrReadOnly`. A document whose path is not an entry path is skipped
-before it reaches sdd, which rejects one it cannot turn into an entry ID.
+The store has no write method. A document whose path is not an entry path is skipped before it
+reaches sdd, which rejects one it cannot turn into an entry ID.
 
 The tests run against a fixture of real entry documents. One drives sdd's own `View` and `Search`
 over the store, which is what shows the port is satisfied rather than merely compiled against.
@@ -94,7 +99,15 @@ A repository declaring a `repo_id` is identified to sdd by it, so every clone sh
 One declaring none is local, and its path is the only identity available.
 
 `.sdd/config.local.yaml` overlays `.sdd/config.yaml` field by field, which is where a machine keeps
-the embedding endpoint and key that no checkout shares.
+the embedding endpoint and key that no checkout shares. Both overlay sdd's machine-wide file,
+`$XDG_CONFIG_HOME/sdd/config.yaml` (or `~/.config/sdd/config.yaml`), in the order sdd itself reads
+them. One embedding setting there reaches every repository on that machine. `UserConfigPath()` names
+that file, and the application hands it to the service when it starts.
+
+**A committed file never chooses where a key goes.** The viewer ignores an embedding `endpoint` and
+`api_keys` in `.sdd/config.yaml` and takes both from the two files a machine owns. Whoever commits
+to a repository writes that file, and a key from a reader's machine would otherwise travel to
+whatever server it named. A team sharing a self-hosted endpoint names it in each machine's own file.
 
 ## Searching a graph
 
@@ -143,8 +156,8 @@ the embedder, which is the same layout sdd's own tool fills. Reproducing that fi
 what lets the viewer read the index that tool already built rather than embedding every entry again
 to fill a second one, and a test holds the fingerprint to the string sdd derives.
 
-sdd reconciles the index before each vector search, embedding whatever is missing and writing it to
-that cache. An index already current is left alone. Read-only is untouched either way, because the
+A search asks sdd to reconcile the open graph's index first (`SearchSyncLocal`), embedding whatever
+is missing and writing it to that cache. An index already current is left alone. Read-only is untouched either way, because the
 cache is not the repository the viewer reads.
 
 ## What the front end shows
@@ -161,18 +174,18 @@ list of what a graph holds reads straight away. A panel on the right shows which
 selected, and both views share that selection.
 
 - **Entries** is a table: a counter, the moment the graph received the entry, the rest of its
-  identifier, layer, kind, derived status, summary, and a control drawing that entry in the graph.
+  identifier, layer, kind, derived status, title, and a control drawing that entry in the graph.
   An identifier opens with that moment and closes with what the entry is, so the two sit in columns
   of their own. Selecting a heading sorts, and selecting the sorted one again turns it around and then
   clears it. Sorting is offered over every entry alone: a search answers in the order sdd ranked it,
   and reordering that throws the ranking away. Every column sorts except the counter and the
-  summary, which is prose and orders by nothing a reader wants. A search adds a score column, dropped again when the
+  title, which orders by nothing a reader wants. A search adds a score column, dropped again when the
   search clears.
 
   A width fixes each column, and pulling the edge of a heading changes it. A column stops at the
   width its own heading needs rather than closing to nothing, and the widths outlive a sort, a
   search, and a switch between the views. A search leaves every one of them where it was and adds the
-  score beside them. Every column a reader reads carries a width, the summary among them, and the
+  score beside them. Every column a reader reads carries a width, the title among them, and the
   control drawing an entry in the graph keeps its own size and its place at the right edge. An
   unnamed column between them takes up whatever the rest leave. A floor under the table's width makes
   a narrow view scroll sideways rather than crush the columns together. Rows are drawn only where the
@@ -193,7 +206,8 @@ draws, so the graph shows the entries a search and its filters left standing rat
 whole graph. The graph takes the whole area under that row, to the window's own edges.
 
 - **Graph** draws what is listed, through `3d-force-graph` over three.js. An entry is one shape,
-  coloured by type and greyed where the graph has retired it, sized by how many links reach it. A
+  coloured by type and greyed where the graph has retired it, sized by how many links reach it, and
+  showing its identifier and title where the pointer rests on it. A
   link is one line, coloured by its kind and pointing at its target. Repulsion reaches a bounded
   distance, so an entry group linking to nothing else stays beside the body it belongs to rather than
   drifting past everything.
@@ -201,14 +215,21 @@ whole graph. The graph takes the whole area under that row, to the window's own 
   to it, purple and smaller again on what links to those. The camera flies to the selection, which a
   view of the whole graph draws too small to find by eye. With nothing selected, the settled layout
   is framed whole.
-- **The panel** carries the entry's type, layer, kind, intent and derived status, its summary, its
-  topics with the area marked, its participants and confidence, the links it declares and the links
-  that reach it, the identifiers it names that the graph does not hold, and its body. Every link is a
-  control selecting the entry at its other end.
+- **The panel** carries the entry's type, layer, kind, intent and derived status, its title, its
+  summary, its topics with the area marked, its participants and confidence, the links it declares
+  and the links that reach it, the identifiers it names that the graph does not hold, and its body.
+  Every link is a control selecting the entry at its other end. It names that entry by its title,
+  above the description the link carries.
+
+**The title names an entry.** sdd writes a short title into each entry from graph schema 2 on. The
+table, the graph's hover text, the panel's heading and every link in the panel use it. A graph
+written before schema 2 carries none, and the summary stands in. The table shows the summary when the
+pointer rests on a title.
 
 `Entries()` reports one record per entry, newest first, since an entry's identifier opens with the
 moment it was written. Each record carries the frontmatter fields, the links the file declares, and
-the derived status, with the live head named where an entry is closed or superseded. Status comes
+the derived status, with the live head named where an entry is closed or superseded. The title is one
+of those fields. Status comes
 from one `View` call over `source(graph):as-list`, matched to entries by identifier, and the line it
 is read from is the one sdd's own unit tests hold.
 

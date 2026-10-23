@@ -12,13 +12,13 @@ function LinkList({
 	title,
 	links,
 	end,
-	summaries,
+	names,
 	onSelect,
 }: {
 	title: string;
 	links: GraphLink[];
 	end: 'source' | 'target';
-	summaries: Map<string, string>;
+	names: Map<string, string>;
 	onSelect: (id: string) => void;
 }) {
 	if (links.length === 0) {
@@ -45,7 +45,8 @@ function LinkList({
 									{link.kind}
 								</span>
 								<span className="identifier">{other}</span>
-								<span className="line">{link.desc === '' ? summaries.get(other) : link.desc}</span>
+								<span className="name">{names.get(other) ?? ''}</span>
+								{link.desc !== '' && <span className="line">{link.desc}</span>}
 							</button>
 						</li>
 					);
@@ -58,7 +59,7 @@ function LinkList({
 export function EntryDetail({
 	entry,
 	network,
-	summaries,
+	names,
 	onSelect,
 	onClose,
 	width,
@@ -66,7 +67,7 @@ export function EntryDetail({
 }: {
 	entry: Entry;
 	network: EntryNetwork;
-	summaries: Map<string, string>;
+	names: Map<string, string>;
 	onSelect: (id: string) => void;
 	onClose: () => void;
 	width: number;
@@ -144,6 +145,7 @@ export function EntryDetail({
 					</p>
 				)}
 
+				{entry.title !== '' && <h2 className="title">{entry.title}</h2>}
 				<p className="summary">{entry.summary}</p>
 
 				<div className="topics">
@@ -163,14 +165,14 @@ export function EntryDetail({
 					title="Points at"
 					links={network.outgoing.get(entry.id) ?? []}
 					end="target"
-					summaries={summaries}
+					names={names}
 					onSelect={onSelect}
 				/>
 				<LinkList
 					title="Pointed at by"
 					links={network.incoming.get(entry.id) ?? []}
 					end="source"
-					summaries={summaries}
+					names={names}
 					onSelect={onSelect}
 				/>
 

@@ -220,7 +220,7 @@ main header h1 {
 	white-space: nowrap;
 }
 
-.entries .summary {
+.entries .name {
 	max-width: 48ch;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -376,7 +376,7 @@ main header h1 {
 	font-size: 0.78rem;
 }
 
-.entries .summary {
+.entries .name {
 	color: var(--muted);
 }
 
@@ -572,6 +572,13 @@ main header h1 {
 	color: #8ab6f0;
 }
 
+.detail .title {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
 .detail .summary {
 	margin: 0;
 	font-size: 0.85rem;
@@ -641,6 +648,15 @@ main header h1 {
 	font-family: ui-monospace, SFMono-Regular, monospace;
 	font-size: 0.7rem;
 	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.links .name {
+	grid-column: 1 / -1;
+	font-size: 0.8rem;
+	color: var(--text);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
