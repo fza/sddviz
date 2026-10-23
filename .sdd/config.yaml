@@ -30,8 +30,6 @@ supported_agents: [claude]
 
 # LLM provider settings (defaults shown — override here or in config.local.yaml).
 llm:
-  provider: claude-cli
-  model: claude-opus-5
   timeout: 2m
   concurrency: 4
 
