@@ -13,6 +13,7 @@ CLAUDE.local.md
 .index/
 .log/
 __pycache__/
+source/.task/
 
 # Build output
 node_modules/
