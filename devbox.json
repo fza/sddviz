@@ -59,6 +59,7 @@
     }
   },
   "env": {
+    "GOROOT": "",
     "MACOSX_DEPLOYMENT_TARGET": "14.0",
     "SDDVIZ_SIGN_IDENTITY": "Apple Development: Felix Zandanel (ER7AP28HL7)"
   }
