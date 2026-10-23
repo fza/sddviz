@@ -74,10 +74,10 @@ points `core.hooksPath` at it on first entry into the directory.
 sddviz embeds sdd and implements its `GraphStore` port. One walk of `.sdd/graph/**/*.md` builds the
 snapshot; sdd answers everything derived from it.
 
-- **Never rebuild what the tool owns.** Derived status, search across all three modes, the vector
-  index under `.sdd/index/`, and linting live in sdd and are reached through the embedded
-  `application`, never reimplemented. Reaching for a local version means capturing a signal, not
-  writing one.
+- **Never rebuild what the tool owns.** sdd owns derived status, search across all three modes, the
+  vector index and linting. The index sits in the machine's cache under `$XDG_CACHE_HOME/sdd`, never
+  in a repository. The viewer reaches all four through the embedded `application` and never
+  reimplements them. Reaching for a local version means capturing a signal, not writing one.
 - **Status is never computed here.** No embedding reaches the derivation, since `Snapshot` exposes
   `Project()`, `Revision()` and `Health()` alone. It comes from the line sdd's view renders. sdd
   derives eight states from the whole graph and stores none of them, so a local rule is a guess
