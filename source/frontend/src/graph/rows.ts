@@ -53,7 +53,7 @@ function compare(first: Entry, second: Entry, column: SortColumn): number {
 	return sortValue(first, column).localeCompare(sortValue(second, column));
 }
 
-// sortEntries orders a copy, so the order sdd reported survives beside it.
+// `sortEntries` orders a copy, so the order sdd reported survives beside it.
 export function sortEntries(entries: Entry[], sort: Sort | null): Entry[] {
 	if (sort === null) {
 		return entries;
@@ -70,7 +70,7 @@ export function sortEntries(entries: Entry[], sort: Sort | null): Entry[] {
 	});
 }
 
-// nextSort turns a chosen column into the sort that follows it: a new column
+// `nextSort` turns a chosen column into the sort that follows it: a new column
 // opens ascending, and the column already sorted turns around, then clears.
 export function nextSort(current: Sort | null, column: SortColumn): Sort | null {
 	if (current === null || current.column !== column) {

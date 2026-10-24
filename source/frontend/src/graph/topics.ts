@@ -9,7 +9,7 @@ export function isArea(topic: string): boolean {
 	return topic.startsWith(areaPrefix);
 }
 
-// topicsOf reports every topic the entries carry, areas first and each group in
+// `topicsOf` reports every topic the entries carry, areas first and each group in
 // alphabetical order.
 export function topicsOf(entries: Entry[]): string[] {
 	const held = new Set<string>();
@@ -27,7 +27,7 @@ export function topicsOf(entries: Entry[]): string[] {
 	});
 }
 
-// availableTopics reports the topics worth offering: those carried by the
+// `availableTopics` reports the topics worth offering: those carried by the
 // entries that survive the current choice, which is every topic that would
 // still leave something to read, plus the chosen ones so a reader can undo
 // them. A topic leading to nothing is absent rather than disabled.
@@ -39,7 +39,7 @@ export function availableTopics(entries: Entry[], chosen: string[]): string[] {
 	return topicsOf(entries).filter((topic) => reachable.has(topic));
 }
 
-// withTopics narrows entries to those carrying every topic chosen, because
+// `withTopics` narrows entries to those carrying every topic chosen, because
 // choosing an area and a facet together asks for the overlap rather than the
 // union.
 export function withTopics(entries: Entry[], chosen: string[]): Entry[] {

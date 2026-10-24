@@ -9,8 +9,8 @@
 # entry runs. Each list below is the only place its tools are named.
 #
 # Homebrew carries what the Devbox environment cannot: the shell hook that
-# loads Devbox in the first place, and a decision-graph tool this repository
-# drives by bare name.
+# loads Devbox in the first place, and the two forks this repository drives by
+# bare name.
 
 set -euo pipefail
 
@@ -18,29 +18,32 @@ cd "$(dirname "$0")/.."
 
 # direnv loads the Devbox environment on entering the directory, so it cannot
 # come from that environment. Homebrew's Git build is here because Xcode's lags,
-# and Go builds the two programs below before Devbox is in play.
+# and Go builds the program below before Devbox is in play.
 FORMULAE=(direnv git golang)
 
-# The decision-graph tool. sddviz embeds sdd as a library and needs no binary at
-# runtime; this repository's own graph work drives the command line, and
-# `.mcp.json` launches its server.
-CASKS=(networkteam/tap/sdd)
+# The decision-graph tool and the prose linter, both forks. sddviz embeds the sdd
+# fork as a library and needs no binary at runtime; this repository's own graph
+# work drives the command line, `agentic-capture` refuses any other build, and
+# `.mcp.json` launches its server. The Vale fork carries rules this repository
+# depends on, chief among them reading a source file as code so only its
+# comments are prose. Homebrew's own `vale` formula is the upstream build and
+# lints those files as English, which turns a clean tree into thousands of
+# findings.
+CASKS=(fza/tap/sdd fza/tap/vale)
+
+# The mark every fork release carries in its version.
+FORK_MARK=fza
 
 # The Wails command line, reached by bare name, so `$(go env GOPATH)/bin`
 # belongs on PATH. `devbox run tools` installs the same program inside the
 # environment.
 GO_PROGRAMS=(github.com/wailsapp/wails/v3/cmd/wails3@latest)
 
-# The prose linter is a fork carrying rules this repository depends on, chief
-# among them reading a source file as code so only its comments are prose.
-# Homebrew's own `vale` is the upstream build and lints those files as English,
-# which turns a clean tree into thousands of findings. Its module path still
-# names upstream, so `go install` cannot reach the fork and a clone is what
-# builds it.
-VALE_FORK=git@github.com:fza/vale.git
-VALE_TAG=v3.19.0-fdbox.1
-
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# A command on PATH that is not the fork counts as absent, since an upstream
+# build answers to the same name.
+have_fork() { "$1" --version 2>/dev/null | grep -qF -- "$FORK_MARK"; }
 
 # The command a tool installs under, derived from what installs it. Homebrew's
 # Go formula is the one name that differs from its command.
@@ -55,33 +58,13 @@ command_of() {
 }
 
 absent() {
-    for source in "${FORMULAE[@]}" "${CASKS[@]}" "${GO_PROGRAMS[@]}"; do
+    for source in "${FORMULAE[@]}" "${GO_PROGRAMS[@]}"; do
         have "$(command_of "$source")" || printf '%s ' "$(command_of "$source")"
     done
 
-    vale --version 2>/dev/null | grep -qF "$VALE_TAG" || printf 'vale '
-}
-
-# The fork builds from a clone this script keeps at one tag, so every machine
-# carries the same linter and moving to newer fork work is an edit here.
-install_vale() {
-    clone=${XDG_CACHE_HOME:-$HOME/.cache}/sddviz/vale
-
-    if [ -d "$clone/.git" ]; then
-        git -C "$clone" fetch --depth 1 origin "refs/tags/$VALE_TAG:refs/tags/$VALE_TAG"
-    else
-        mkdir -p "$(dirname "$clone")"
-        git clone --branch "$VALE_TAG" --depth 1 "$VALE_FORK" "$clone"
-    fi
-
-    git -C "$clone" checkout --quiet "$VALE_TAG"
-    (cd "$clone" && go build -ldflags "-s -w -X main.version=$VALE_TAG" -o bin/vale ./cmd/vale)
-
-    # Asking the toolchain rather than assuming ~/go, since a developer may have
-    # moved GOPATH and this is the same directory every other Go program lands in.
-    bin=$(go env GOPATH)/bin
-    mkdir -p "$bin"
-    install "$clone/bin/vale" "$bin/vale"
+    for source in "${CASKS[@]}"; do
+        have_fork "$(command_of "$source")" || printf '%s ' "$(command_of "$source")"
+    done
 }
 
 if [ "${1:-}" = "--check" ]; then
@@ -100,26 +83,33 @@ for source in "${FORMULAE[@]}"; do
     have "$(command_of "$source")" && echo "have $(command_of "$source")" || brew install "$source"
 done
 
-for source in "${CASKS[@]}"; do
-    have "$(command_of "$source")" && echo "have $(command_of "$source")" || brew install --cask "$source"
-done
-
 for source in "${GO_PROGRAMS[@]}"; do
     have "$(command_of "$source")" && echo "have $(command_of "$source")" || go install "$source"
 done
 
-printf '\n== prose linter\n'
-if brew list --versions vale >/dev/null 2>&1; then
-    echo "Homebrew carries the upstream vale, which shadows the fork." >&2
-    echo "Remove it first: brew uninstall vale" >&2
-    exit 1
-fi
+printf '\n== forks\n'
+for source in "${CASKS[@]}"; do
+    name=$(command_of "$source")
 
-if vale --version 2>/dev/null | grep -qF "$VALE_TAG"; then
-    echo "have $(vale --version)"
-else
-    install_vale
-fi
+    # An upstream formula links the same command into Homebrew's bin, so the
+    # fork's cask cannot install beside it.
+    if brew list --formula --versions "$name" >/dev/null 2>&1; then
+        echo "Homebrew carries the upstream $name, which collides with the fork." >&2
+        echo "Remove it first: brew uninstall --formula $name" >&2
+        exit 1
+    fi
+
+    if have_fork "$name"; then
+        echo "have $("$name" --version)"
+    else
+        brew install --cask "$source"
+    fi
+
+    if ! have_fork "$name"; then
+        echo "$(command -v "$name") is not the fork and comes first on PATH." >&2
+        exit 1
+    fi
+done
 
 printf '\n== next\n'
 cat <<'MESSAGE'

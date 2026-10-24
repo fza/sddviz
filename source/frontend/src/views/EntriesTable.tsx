@@ -7,11 +7,11 @@ import { splitIdentifier } from '../graph/rows';
 import { entryName } from '../graph/names';
 import { StatusBadge } from './StatusBadge';
 
-// rowHeight is what every row measures, in pixels. Windowing needs a height it
+// `rowHeight` is what every row measures, in pixels. Windowing needs a height it
 // can multiply rather than measure, and `.entries tbody tr` holds rows to it.
 const rowHeight = 34;
 
-// overscan is how many rows above and below the visible window are drawn, so a
+// `overscan` is how many rows above and below the visible window are drawn, so a
 // scroll of a few rows finds them already there.
 const overscan = 12;
 

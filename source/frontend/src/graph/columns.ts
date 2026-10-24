@@ -15,7 +15,7 @@ export const defaultWidths: Record<string, number> = {
 // A column narrower than this hides its own heading, so a pull stops here.
 export const minimumWidth = 44;
 
-// nameFloor is the room the name keeps at the table's narrowest, below which
+// `nameFloor` is the room the name keeps at the table's narrowest, below which
 // the table scrolls sideways rather than squeezing the text to nothing.
 const nameFloor = 260;
 
@@ -25,13 +25,13 @@ export function widthOf(widths: Widths, column: string): number {
 	return widths[column] ?? defaultWidths[column] ?? minimumWidth;
 }
 
-// resizeTo reports the widths that follow a pull, clamping the column so it
+// `resizeTo` reports the widths that follow a pull, clamping the column so it
 // cannot fall below what its heading needs.
 export function resizeTo(widths: Widths, column: string, width: number): Widths {
 	return { ...widths, [column]: Math.max(minimumWidth, Math.round(width)) };
 }
 
-// tableFloor is the width below which the table scrolls sideways: every column
+// `tableFloor` is the width below which the table scrolls sideways: every column
 // carrying a width, at the width it carries, plus the room the name keeps.
 export function tableFloor(widths: Widths, columns: string[]): number {
 	const fixed = columns

@@ -48,7 +48,7 @@ const settleMilliseconds = 12000;
 // works in.
 const focusDistance = 480;
 
-// zoomSpeed multiplies what one pinch or one wheel notch moves the camera. The
+// `zoomSpeed` multiplies what one pinch or one wheel notch moves the camera. The
 // controls default to 1.2, which crosses the depth of a graph this size only
 // after many gestures.
 const zoomSpeed = 3.4;
@@ -87,7 +87,7 @@ function escapeHTML(text: string): string {
 		.replaceAll('"', '&quot;');
 }
 
-// focusOn flies the camera to one entry. It answers whether it found the entry
+// `focusOn` flies the camera to one entry. It answers whether it found the entry
 // to fly to, so a caller can fall back to a fit over everything.
 function focusOn(
 	drawn: ForceGraph3DInstance<EntryNode, EntryLink>,

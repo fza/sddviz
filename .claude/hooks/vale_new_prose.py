@@ -65,10 +65,18 @@ def added_lines(path):
 
 
 def alerts(path):
+    """Vale's findings on the path, read from the repository root.
+
+    `.vale.ini` matches its sections against paths relative to the root, and
+    an absolute path falls outside every one of them, carve-outs included.
+    """
+    root = os.environ.get('CLAUDE_PROJECT_DIR') or os.getcwd()
+
     run = subprocess.run(
-        ['vale', '--output=JSON', path],
+        ['vale', '--output=JSON', os.path.relpath(os.path.abspath(path), root)],
         capture_output=True,
         text=True,
+        cwd=root,
     )
 
     try:

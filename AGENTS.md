@@ -172,10 +172,13 @@ not bind internal identifiers, and its §1 carries the scoping table.
 **Vale decides whether prose ships.** `.vale.ini` covers every Markdown file and the **comments** in
 every language it parses, carving out `.sdd/` and `.claude/`, which belong to their tools, and the
 generated trees. `devbox run prose:lint` is the repository's invocation and runs as part of
-`devbox run lint`. Act on `vale --output=JSON <path>` for a single file.
+`devbox run lint`. Act on `vale --output=JSON <path>` for a single file, naming the path relative to
+the repository root: `.vale.ini` matches its sections against relative paths, so an absolute one
+escapes every carve-out.
 
-`vale` comes from `PATH` rather than from `devbox.json`, because the build in use is ahead of the one
-nixpkgs carries.
+`vale` comes from `PATH` rather than from `devbox.json`. It is the fork the `fza/tap/vale` cask
+installs, which `scripts/dev-setup.sh` checks for, because upstream Vale reads a source file as
+English rather than as code with comments.
 
 - **New prose clears every `error`, `warning` and `suggestion`**: a fresh document, a line added to an
   old one, a graph entry body, a commit message, a code comment.
