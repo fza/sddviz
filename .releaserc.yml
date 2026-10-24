@@ -1,0 +1,22 @@
+# A release is cut by hand (release.yml) from main. The commit types since the
+# last version decide the next one, and nothing is committed back: the version
+# reaches the app bundle through GoReleaser at build time.
+#
+# The release notes never pass through a shell: @semantic-release/github
+# creates the release carrying them, and GoReleaser uploads the archives into
+# it, keeping its notes. Interpolating them into a command would let a commit
+# subject run as shell under a token that writes to the repository.
+branches:
+  - main
+tagFormat: v${version}
+plugins:
+  - - "@semantic-release/commit-analyzer"
+    - preset: conventionalcommits
+  - - "@semantic-release/release-notes-generator"
+    - preset: conventionalcommits
+  - - "@semantic-release/github"
+    - successComment: false
+      failComment: false
+      releasedLabels: false
+  - - "@semantic-release/exec"
+    - publishCmd: goreleaser release --clean

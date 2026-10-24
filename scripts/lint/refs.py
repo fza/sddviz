@@ -44,6 +44,11 @@ def tracked(*patterns):
     return [path for path in listing.split('\0') if path]
 
 
+def ignored(path):
+    """True where git ignores the path: build output, absent from any fresh clone."""
+    return subprocess.run(['git', 'check-ignore', '-q', '--no-index', '--', path]).returncode == 0
+
+
 def read(path):
     try:
         with open(path, 'rb') as handle:
@@ -130,6 +135,8 @@ def check_paths(corpus):
                 if PLACEHOLDER & set(candidate):
                     continue
                 if os.path.exists(candidate) or (number, candidate) in seen:
+                    continue
+                if ignored(candidate):
                     continue
                 seen.add((number, candidate))
                 report.note(f'{path}:{number}',

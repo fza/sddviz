@@ -247,3 +247,13 @@ viewer owns, because sdd requires both and a read writes to neither.
 ## Documentation sets
 
 No implementation set exists yet.
+
+## Releasing
+
+`.github/workflows/release.yml` releases on a `macos-26` runner and refuses an SDK older than 26.
+`.goreleaser.yaml` builds `source` for `darwin/arm64` and `darwin/amd64` with cgo and writes the
+binary to `sddviz.app/Contents/MacOS/sddviz`. Each archive adds the icon and a copy of `Info.plist`
+carrying the release version. The `sddviz` cask in `fza/homebrew-tap` installs the bundle and links
+the binary onto `PATH`. Before installing, the cask clears the quarantine flag and signs the bundle
+ad hoc. `.releaserc.yml` lets semantic-release choose the version on a manual run, and a pushed `v*`
+version releases as named.

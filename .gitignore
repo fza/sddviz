@@ -18,6 +18,7 @@ source/.task/
 # Build output
 node_modules/
 source/bin/
+dist/
 source/frontend/dist/
 source/frontend/.bindings-tmp-*/
 

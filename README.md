@@ -25,6 +25,17 @@ SDD records a project's reasoning as an append-only graph of signals (what was n
 keyboard well and serves everyone else poorly. A viewer puts the same reasoning in front of anyone
 who needs it, without a terminal and without an agent session.
 
+## Installing
+
+```bash
+brew install --cask fza/tap/sddviz
+```
+
+The cask places `sddviz.app` in the applications folder and links `sddviz` onto `PATH`, so
+`sddviz ~/some/repository` opens that repository at once. The bundle carries no Developer ID
+signature: the cask clears its quarantine flag and signs it ad hoc on install, which lets macOS open
+it.
+
 ## Requirements
 
 macOS, for now. Wails builds Linux and Windows from the same source, and neither is exercised.
@@ -66,6 +77,26 @@ which needs two things this repository cannot create: that certificate in the ke
 notarization credentials stored with
 `xcrun notarytool store-credentials sddviz-notary`. With both in place,
 `devbox run sign:notarize` signs and submits.
+
+## Releasing
+
+`.github/workflows/release.yml` builds on a macOS 26 runner. The window's controls take their size
+from the SDK the application links against. The workflow runs the tests first. Then
+[GoReleaser](https://goreleaser.com) builds the application for Apple silicon and Intel and packs
+each build as `sddviz.app`. It publishes a GitHub release and writes the cask to `fza/homebrew-tap`
+with the `HOMEBREW_TAP_TOKEN` secret.
+
+Two ways start it:
+
+- **Run the workflow by hand from `main`.** [semantic-release](https://semantic-release.gitbook.io)
+  reads the commit types since the last version and picks the next one: `fix:` a patch, `feat:` a
+  minor version, a breaking change the next major.
+- **Push a version**: `git tag v0.0.1 && git push origin v0.0.1`. The workflow releases exactly that
+  version. semantic-release starts a repository with no release at `1.0.0`, so the first version
+  comes from a push.
+
+The release never reads `SDDVIZ_SIGN_IDENTITY`. Its binaries carry an ad hoc signature from the Go linker,
+and the cask signs the whole bundle ad hoc on install.
 
 ## The web build
 

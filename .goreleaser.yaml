@@ -1,0 +1,113 @@
+version: 2
+
+project_name: sddviz
+
+# Go embeds the front end at compile time, so the front end builds first. The
+# repository commits the bindings it imports, so no Wails tool runs here.
+#
+# Open-source GoReleaser builds no app bundle, so the archive carries one: the
+# binary lands in `sddviz.app/Contents/MacOS`, and the bundle's property list and
+# icon join it below. The property list in the tree names a placeholder version
+# and the framework's oldest supported system, so a copy outside the tree takes
+# the release's version and the system the build targets.
+before:
+  hooks:
+    - sh -c 'cd source/frontend && npm ci && npm run build'
+    - >-
+      sh -c 'mkdir -p source/bin/release &&
+      cp source/build/darwin/Info.plist source/bin/release/Info.plist &&
+      plutil -replace CFBundleShortVersionString -string {{ .Version }} source/bin/release/Info.plist &&
+      plutil -replace CFBundleVersion -string {{ .Version }} source/bin/release/Info.plist &&
+      plutil -replace LSMinimumSystemVersion -string 14.0 source/bin/release/Info.plist'
+
+builds:
+  - id: sddviz
+    dir: source
+    main: .
+    binary: sddviz.app/Contents/MacOS/sddviz
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    tags:
+      - production
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    ldflags:
+      - -s -w
+    # The WebView binding needs cgo. Go hands clang the target architecture, so
+    # one Apple Silicon runner builds both.
+    env:
+      - CGO_ENABLED=1
+      - MACOSX_DEPLOYMENT_TARGET=14.0
+      - CGO_CFLAGS=-mmacosx-version-min=14.0
+      - CGO_LDFLAGS=-mmacosx-version-min=14.0
+
+archives:
+  - id: sddviz
+    ids:
+      - sddviz
+    formats:
+      - tar.gz
+    files:
+      - src: source/bin/release/Info.plist
+        dst: sddviz.app/Contents
+        strip_parent: true
+      - src: source/build/darwin/icons.icns
+        dst: sddviz.app/Contents/Resources
+        strip_parent: true
+      - LICENSE*
+
+checksum:
+  name_template: checksums.txt
+
+# GitHub Actions sets GITHUB_REPOSITORY_OWNER, so the release, the tap and the
+# cask homepage follow whichever repository runs the release.
+homebrew_casks:
+  - name: sddviz
+    ids:
+      - sddviz
+    skip_upload: auto
+    repository:
+      owner: "{{ .Env.GITHUB_REPOSITORY_OWNER }}"
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: "https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/sddviz"
+    description: Read-only viewer for SDD decision graphs
+    custom_block: |
+      app "sddviz.app"
+    binaries:
+      - "#{appdir}/sddviz.app/Contents/MacOS/sddviz"
+    # The bundle carries no Developer ID signature. Clearing the quarantine bit
+    # and signing it ad hoc before Homebrew moves it lets macOS open it, and the
+    # ad hoc signature covers the property list and icon the archive added
+    # beside the linker-signed binary.
+    hooks:
+      pre:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/sddviz.app"]
+            run "/usr/bin/codesign", args: ["--force", "--deep", "--sign", "-", "{{ .StagedPath }}/sddviz.app"]
+          end
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^sdd:"
+
+# semantic-release creates the release with its notes and GoReleaser adds the
+# archives to it. A release cut from a pushed version has no notes yet, and
+# GoReleaser writes its own changelog into it.
+release:
+  github:
+    owner: "{{ .Env.GITHUB_REPOSITORY_OWNER }}"
+    name: sddviz
+  mode: keep-existing
+  prerelease: auto
