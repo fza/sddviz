@@ -2,6 +2,9 @@
 # last version decide the next one, and nothing is committed back: the version
 # reaches the app bundle through GoReleaser at build time.
 #
+# A bumped dependency ships in the bundle, so a `build` commit scoped `deps`
+# or `deps-dev` releases a patch, and its notes list it under Dependencies.
+#
 # The release notes never pass through a shell: @semantic-release/github
 # creates the release carrying them, and GoReleaser uploads the archives into
 # it, keeping its notes. Interpolating them into a command would let a commit
@@ -12,8 +15,19 @@ tagFormat: v${version}
 plugins:
   - - "@semantic-release/commit-analyzer"
     - preset: conventionalcommits
+      releaseRules:
+        - {type: build, scope: deps, release: patch}
+        - {type: build, scope: deps-dev, release: patch}
   - - "@semantic-release/release-notes-generator"
     - preset: conventionalcommits
+      presetConfig:
+        types:
+          - {type: feat, section: Features}
+          - {type: fix, section: Bug Fixes}
+          - {type: perf, section: Performance Improvements}
+          - {type: revert, section: Reverts}
+          - {type: build, scope: deps, section: Dependencies}
+          - {type: build, scope: deps-dev, section: Dependencies}
   - - "@semantic-release/github"
     - successComment: false
       failComment: false

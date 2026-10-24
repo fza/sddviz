@@ -89,8 +89,9 @@ with the `HOMEBREW_TAP_TOKEN` secret.
 Two ways start it:
 
 - **Run the workflow by hand from `main`.** [semantic-release](https://semantic-release.gitbook.io)
-  reads the commit types since the last version and picks the next one: `fix:` a patch, `feat:` a
-  minor version, a breaking change the next major.
+  reads the commit types since the last version and picks the next one: `fix:` or a dependency bump
+  (`build(deps):`, `build(deps-dev):`) a patch, `feat:` a minor version, a breaking change the next
+  major.
 - **Push a version**: `git tag v0.0.1 && git push origin v0.0.1`. The workflow releases exactly that
   version. semantic-release starts a repository with no release at `1.0.0`, so the first version
   comes from a push.
