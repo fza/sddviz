@@ -42,7 +42,7 @@ devbox run exec           # build the bundle and run it
 devbox run build          # a signed `.app` bundle
 devbox run build:server   # the same application as an HTTP server
 devbox run sign           # sign the bundle for distribution
-devbox run test           # both halves
+devbox run test           # both halves, then the repository scripts
 devbox run lint           # both halves, prose, then the repository checks
 ```
 

@@ -39,9 +39,11 @@
       "frontend:test": "cd source/frontend && npm test",
       "backend:lint": "cd source && go vet ./... && golangci-lint run",
       "backend:test": "cd source && go test -race ./...",
+      "scripts:test": "python3 -m unittest discover -s scripts -p 'test_*.py'",
       "test": [
         "devbox run frontend:test",
-        "devbox run backend:test"
+        "devbox run backend:test",
+        "devbox run scripts:test"
       ],
       "prose:lint": [
         "{ git ls-files -z -- '*.md' '*.go' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; git ls-files -z --others --exclude-standard -- '*.md' '*.go' '*.ts' '*.tsx' '*.js' '*.css' '*.html' '*.py' '*.sh' '*.yml' '*.yaml'; } | xargs -0 vale"

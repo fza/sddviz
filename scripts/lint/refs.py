@@ -118,6 +118,11 @@ def check_paths(corpus):
         if path.startswith(('.sdd/', '.claude/', 'scripts/lint/', 'source/build/')):
             continue
 
+        # A graph entry is immutable and names paths as they stood at capture,
+        # so a fixture graph copied from one is exempt wherever it sits.
+        if '/.sdd/' in path:
+            continue
+
         seen = set()
         for number, line in enumerate(text.split('\n'), 1):
             for candidate in TREE_PATH.findall(line):

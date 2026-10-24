@@ -20,8 +20,8 @@ def ignored(path):
 
     An ignored file never reaches the repository, so the prose bar that
     governs what lands there does not govern it. Graph entry drafts under
-    `.tmp/` are the case this exempts: `vale` runs on them by hand before
-    `sdd new`, because a captured body cannot be corrected afterwards.
+    `.tmp/` are the case this exempts: `agentic-capture` lints their bodies
+    itself, because a captured body cannot be corrected afterwards.
     """
     run = subprocess.run(
         ['git', 'check-ignore', '-q', '--', path],

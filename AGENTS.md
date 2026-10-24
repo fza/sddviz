@@ -33,7 +33,7 @@ devbox run exec           # build the bundle and run it
 devbox run build          # a bundled application
 devbox run build:server   # the same application as an HTTP server
 devbox run bindings       # regenerate the typed front end bindings
-devbox run test           # both halves
+devbox run test           # both halves, then the repository scripts
 devbox run lint           # both halves, prose, then the repository checks
 devbox run prose:lint     # prose alone - Vale over the repository
 devbox run refs:lint      # the repository checks - see scripts/lint/README.md
@@ -244,17 +244,18 @@ nixpkgs carries.
   signal. Status is derived, never written into a file. Two stored fields are the tool's to change:
   `sdd rewrite` corrects an entry's type and kind and repoints inbound references, and
   `sdd summarize` replaces a summary, which is normal practice where one misrepresents its body.
-- **Write every entry through `scripts/graph-capture.py`.** One draft file carries an entry's fields
-  above its body, and the script lints, pre-flights and captures it. The `sddviz-sdd-capture` skill
-  carries the draft shape. Never run `sdd new` by hand: `sdd new "$(cat body.md)"` re-evaluates the
-  body in a second shell, so backticks in it run as command substitution and every identifier
-  vanishes from the entry.
-- **Fix every pre-flight finding above low severity. Low-only findings pass, and are never chased.**
-  A finding that names a dropped criterion or an unstated transition is repaired in the draft, not
-  overridden. `--force` captures anyway and is a judged override that says so in the body.
-- **Lint a graph entry before capture. Nothing can lint it after.** The capture script runs Vale over
-  the body as a real Markdown file, because piping a body into `vale -` reports nothing and a fenced
-  draft reports nothing either.
+- **Write every entry through `agentic-capture <draft.md>`.** One draft under `.tmp/drafts/` carries
+  an entry's fields above its body, and the tool lints, pre-flights and captures it.
+  `.sdd/grounding.yaml` gives it this repository's two rules: a topic opening with `area-`, and
+  `scripts/lint_draft.py` as the body's lint. Never run `sdd new` by hand: `sdd new "$(cat body.md)"`
+  re-evaluates the body in a second shell, so backticks in it run as command substitution and every
+  identifier vanishes from the entry.
+- **A high pre-flight finding blocks the capture. Fix the draft and run it again.** The tool prints
+  a medium finding and captures the entry anyway, so read each one: a correction it calls for is a
+  new entry. `--force` captures despite a high finding, and is the owner's call alone.
+- **Lint a graph entry before capture. Nothing can lint it after.** `scripts/lint_draft.py` runs Vale
+  over the body as a Markdown file of its own and refuses on any finding, suggestions included. Never
+  fence a body: Vale reads a fenced one as code and reports nothing.
 - **An entry's generated summary is exempt from every rule, and only the summary.** Correct one that
   misleads a reader through `sdd summarize`. The body clears every finding first.
 - **Query the graph before every capture, every direction taken, and every gathering of ground
